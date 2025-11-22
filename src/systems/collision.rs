@@ -180,14 +180,14 @@ pub fn show_game_over(
     commands.spawn((
         Text::new("GAME OVER\nPress R to Restart"),
         TextFont {
-            font_size: 60.0,
+            font_size: 30.0,
             ..default()
         },
         TextColor(Color::srgb(1.0, 0.3, 0.3)),
         Node {
             position_type: PositionType::Absolute,
-            left: Val::Percent(30.0),
-            top: Val::Percent(40.0),
+            left: Val::Percent(20.0),
+            top: Val::Percent(30.0),
             ..default()
         },
         GameOverText,

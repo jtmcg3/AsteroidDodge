@@ -13,11 +13,15 @@ use crate::shapes::*;
 pub fn spawn_asteroids(
     mut commands: Commands,
     mut spawn_timer: ResMut<SpawnTimer>,
+    difficulty: Res<DifficultyConfig>,
     config: Res<AsteroidSpawnConfig>,
     time: Res<Time>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
+
+    // update elapsed time
+    spawn_timer.elapsed_time += time.delta_secs();
     // Tick the timer
     spawn_timer.timer.tick(time.delta());
     
@@ -26,6 +30,12 @@ pub fn spawn_asteroids(
         return;
     }
     
+    let new_interval = difficulty.calculate_interval(spawn_timer.elapsed_time);
+
+    //reset spawn timer with new duration
+    spawn_timer.timer.set_duration(std::time::Duration::from_secs_f32(new_interval));
+    spawn_timer.timer.reset();
+
     // Rust Concept: Creating thread-local RNG
     // This is cheaper than using a global RNG with locking
     let mut rng = rand::rng();

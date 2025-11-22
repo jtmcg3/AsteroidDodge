@@ -85,9 +85,9 @@ impl AsteroidSize {
     // number of vertices for the polygon
     pub fn vertex_count(&self) -> usize {
         match self {
-            Self::Small => 6,
-            Self::Medium => 8,
-            Self::Large => 10,
+            Self::Small => 10,
+            Self::Medium => 17,
+            Self::Large => 27,
         }
     }
 
