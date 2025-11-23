@@ -202,6 +202,7 @@ pub fn handle_restart(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut game_state: ResMut<GameState>,
     mut commands: Commands,
+    asset_server: Res<AssetServer>,
     game_over_query: Query<Entity, With<GameOverText>>,
     asteroid_query: Query<Entity, With<Asteroid>>,
 ) {
@@ -226,6 +227,6 @@ pub fn handle_restart(
         }
         
         // Respawn player
-        crate::systems::player::spawn_player(commands);
+        crate::systems::player::spawn_player(commands, asset_server);
     }
 }

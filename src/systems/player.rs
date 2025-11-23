@@ -7,12 +7,12 @@ use crate::resources::*;
 /// 
 /// Rust Concept: Commands pattern in Bevy
 /// Commands queue entity creation/deletion to happen after the system runs
-pub fn spawn_player(mut commands: Commands) {
+pub fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         // Visual representation
         Sprite {
-            color: Color::srgb(0.0, 0.8, 0.0),
-            custom_size: Some(Vec2::new(30.0, 30.0)),
+            image: asset_server.load("sprites/ship_G.png"),
+            custom_size: Some(Vec2::new(40.0, 40.0)),
             ..default()
         },
         // Game components
@@ -23,7 +23,11 @@ pub fn spawn_player(mut commands: Commands) {
         // Rust Concept: Tuple syntax in spawn
         // Each item in the tuple becomes a component
         RigidBody::Dynamic,
-        Collider::rectangle(30.0, 30.0),  // Simple circle collider for the player
+        Collider::triangle(
+            Vec2::new(0.0, 20.0),
+            Vec2::new(-20.0, -20.0),
+            Vec2::new(20.0, -20.0),
+        ),  // Simple circle collider for the player
         // Rust Concept: Type inference
         // Rust infers the Mass type from context
         Mass(2.0),

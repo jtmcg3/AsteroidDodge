@@ -4,6 +4,7 @@
 pub mod player;
 pub mod asteroid;
 pub mod collision;
+pub mod background;
 
 // Re-export all public functions for convenience
 // Rust Concept: Selective re-exports
@@ -11,3 +12,4 @@ pub mod collision;
 pub use player::*;
 pub use asteroid::*;
 pub use collision::*;
+pub use background::*;

@@ -47,6 +47,7 @@ fn main() {
         // Rust Concept: System scheduling with tuples
         .add_systems(Startup, (
             setup_camera,
+            spawn_background,
             spawn_player,
             setup_health_display,
         ))
@@ -65,7 +66,7 @@ fn main() {
             update_health_display,
             show_game_over,
             // Rendering (debug visualization)
-            draw_asteroid_shapes,
+            //draw_asteroid_shapes,
         ))
         // Rust Concept: System ordering
         // We can specify that certain systems run before others

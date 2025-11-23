@@ -137,6 +137,7 @@ pub fn cleanup_offscreen(
 /// 
 /// Rust Concept: Gizmos for debug rendering
 /// This is temporary - in a full game you'd use mesh rendering
+#[cfg(feature = "debug")]
 pub fn draw_asteroid_shapes(
     mut gizmos: Gizmos,
     query: Query<(&Transform, &PolygonMesh), With<Asteroid>>,
