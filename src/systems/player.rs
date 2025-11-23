@@ -7,7 +7,11 @@ use crate::resources::*;
 /// 
 /// Rust Concept: Commands pattern in Bevy
 /// Commands queue entity creation/deletion to happen after the system runs
-pub fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>, config: Res<PhysicsConfig>) {
+pub fn spawn_player(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    config: Res<PhysicsConfig>,
+) {
     commands.spawn((
         // Visual representation
         Sprite {
@@ -19,22 +23,16 @@ pub fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>, conf
         Player,
         Health::new(100.0),
         Velocity::new(0.0, 0.0),
-        // Physics components (from Avian)
-        // Rust Concept: Tuple syntax in spawn
-        // Each item in the tuple becomes a component
+        // Physics components
         RigidBody::Dynamic,
         Collider::triangle(
             Vec2::new(0.0, 20.0),
             Vec2::new(-20.0, -20.0),
             Vec2::new(20.0, -20.0),
-        ),  // Simple circle collider for the player
-        // Rust Concept: Type inference
-        // Rust infers the Mass type from context
-        Mass(15.0), // starting, likely want to variablize this
-        // Lock rotation so player stays upright
+        ),
+        Mass(15.0),
         CollisionEventsEnabled,
         // Physics config
-        // Use ConstantForce/Torque for persistent thruster forces
         ConstantForce::default(),
         ConstantTorque::default(),
         LinearDamping(config.drag),
@@ -105,6 +103,46 @@ pub fn player_movement(
         constant_force.0 -= forward * physics_config.reverse_thrust_force;
     }
 
+}
+
+/// Handle player firing
+pub fn player_fire(
+    mut commands: Commands,
+    keyboard: Res<ButtonInput<KeyCode>>,
+    query: Query<&Transform, With<Player>>,
+    config: Res<PhysicsConfig>,
+    asset_server: Res<AssetServer>,
+) {
+    if !keyboard.just_pressed(KeyCode::Space) {
+        return;
+    }
+
+    let Ok(transform) = query.single() else {
+        return;
+    };
+
+    // Spawn projectile at ship's nose
+    // Offset slightly forward so it doesn't spawn inside the ship
+    let forward = (transform.rotation * Vec3::Y).truncate();
+    let spawn_pos = transform.translation.truncate() + forward * 30.0;
+
+    commands.spawn((
+        Sprite {
+            // Use a small circle or existing asset
+            // For now, we'll use a small custom size sprite if no asset
+            custom_size: Some(Vec2::new(10.0, 20.0)),
+            color: Color::srgb(1.0, 0.8, 0.2), 
+            ..default()
+        },
+        Transform::from_translation(spawn_pos.extend(0.0))
+            .with_rotation(transform.rotation),
+        Projectile,
+        Lifetime::new(config.projectile_lifetime),
+        // Physics for collision detection
+        RigidBody::Kinematic, // Kinematic so it moves manually but detects collisions
+        Collider::rectangle(10.0, 20.0),
+        Sensor, // Sensor so it doesn't physically push things
+    ));
 }
 
 /// Keep player within screen bounds

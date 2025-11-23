@@ -114,3 +114,25 @@ impl PolygonMesh {
         Self { vertices }
     }
 }
+
+#[derive(Component)]
+pub struct Projectile;
+
+#[derive(Component)]
+pub struct Lifetime {
+    pub timer: Timer,
+}
+
+impl Lifetime {
+    pub fn new(seconds: f32) -> Self {
+        Self {
+            timer: Timer::from_seconds(seconds, TimerMode::Once),
+        }
+    }
+}
+
+#[derive(Component)]
+pub enum Thruster {
+    Left,
+    Right,
+}

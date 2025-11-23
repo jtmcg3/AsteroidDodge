@@ -9,6 +9,7 @@
 
 use bevy::prelude::*;
 use avian2d::prelude::*;
+use bevy_hanabi::prelude::*;
 
 mod components;
 mod resources;
@@ -46,6 +47,7 @@ fn main() {
         // Add Avian Physics plugin
         // Rust Concept: Plugin configuration
         .add_plugins(PhysicsPlugins::default())
+        .add_plugins(HanabiPlugin)
         // Configure physics behavior
         // Rust Concept: Resource insertion for configuration
         .insert_resource(Gravity(Vec2::ZERO)) // No gravity in space!
@@ -72,12 +74,16 @@ fn main() {
         .add_systems(Update, (
             // Input handling
             player_movement,
+            player_fire,
             handle_restart,
             // Spawning and cleanup
             spawn_asteroids,
             cleanup_offscreen,
+            move_projectiles,
+            cleanup_projectiles,
             // Physics and collision (handled by Avian automatically)
             handle_collisions_simple,
+            handle_projectile_collisions,
             // UI updates
             update_health_display,
             update_score_display,

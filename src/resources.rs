@@ -89,6 +89,8 @@ pub struct PhysicsConfig {
     pub reverse_thrust_force: f32,
     pub drag: f32,
     pub angular_drag: f32,
+    pub projectile_speed: f32,
+    pub projectile_lifetime: f32,
 }
 
 impl Default for PhysicsConfig {
@@ -99,6 +101,8 @@ impl Default for PhysicsConfig {
             reverse_thrust_force: 3000.0,
             drag: 1.0,
             angular_drag: 1.0,
+            projectile_speed: 500.0,
+            projectile_lifetime: 2.0,
         }
     }
 }

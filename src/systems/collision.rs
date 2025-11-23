@@ -1,5 +1,6 @@
 use bevy::prelude::*;
-use avian2d::prelude::CollisionStart;
+use avian2d::prelude::*;
+use bevy_hanabi::prelude::*;
 use crate::components::*;
 use crate::resources::*;
 
@@ -73,8 +74,8 @@ pub fn handle_collisions_simple(
     for event in collision_events.read() {
         let entity1 = event.body1.unwrap();
         let entity2 = event.body2.unwrap();
-        // Check both orderings of the collision
-        // Rust Concept: Helper function to keep code DRY (Don't Repeat Yourself)
+        
+        // Check Player-Asteroid
         if let Some(collision) = check_player_asteroid_collision(
             entity1,
             entity2,
@@ -88,7 +89,134 @@ pub fn handle_collisions_simple(
                 &mut game_state,
             );
         }
+        
+        // Check Projectile-Asteroid
+        // We can just despawn both for now
+        // Rust Concept: Querying for specific components to identify collision type
+        // We need a query for projectiles to check if one of the entities is a projectile
+        // But we can't easily pass it into this helper function structure without changing signatures
+        // So let's do it inline for now or add a helper
     }
+}
+
+/// Handle collisions between projectiles and asteroids
+pub fn handle_projectile_collisions(
+    mut commands: Commands,
+    mut collision_events: MessageReader<CollisionStart>,
+    mut game_state: ResMut<GameState>,
+    projectile_query: Query<Entity, With<Projectile>>,
+    asteroid_query: Query<(Entity, &AsteroidSize, &Transform), With<Asteroid>>,
+    mut effects: ResMut<Assets<EffectAsset>>,
+) {
+    for event in collision_events.read() {
+        let entity1 = event.body1.unwrap();
+        let entity2 = event.body2.unwrap();
+        
+        let projectile_entity;
+        let asteroid_entity;
+        let asteroid_size;
+        let asteroid_position;
+        
+        if projectile_query.contains(entity1) {
+            projectile_entity = entity1;
+            if let Ok((ast_ent, size, transform)) = asteroid_query.get(entity2) {
+                asteroid_entity = ast_ent;
+                asteroid_size = size;
+                asteroid_position = transform.translation;
+            } else {
+                continue;
+            }
+        } else if projectile_query.contains(entity2) {
+            projectile_entity = entity2;
+            if let Ok((ast_ent, size, transform)) = asteroid_query.get(entity1) {
+                asteroid_entity = ast_ent;
+                asteroid_size = size;
+                asteroid_position = transform.translation;
+            } else {
+                continue;
+            }
+        } else {
+            continue;
+        }
+        
+        // Collision confirmed
+        commands.entity(projectile_entity).despawn();
+        commands.entity(asteroid_entity).despawn();
+        
+        // Add score based on asteroid size
+        let score_value = match asteroid_size {
+            AsteroidSize::Small => 100,
+            AsteroidSize::Medium => 50,
+            AsteroidSize::Large => 20,
+        };
+        game_state.score += score_value;
+        
+        // Spawn explosion particle effect
+        spawn_explosion(&mut commands, &mut effects, asteroid_position);
+    }
+}
+
+/// Spawn an explosion particle effect at the given position
+fn spawn_explosion(
+    commands: &mut Commands,
+    effects: &mut ResMut<Assets<EffectAsset>>,
+    position: Vec3,
+) {
+    use bevy_hanabi::prelude::*;
+    
+    // Create color gradient for explosion
+    let mut gradient = Gradient::new();
+    gradient.add_key(0.0, Vec4::new(1.0, 0.8, 0.2, 1.0)); // Bright yellow
+    gradient.add_key(0.3, Vec4::new(1.0, 0.4, 0.1, 1.0)); // Orange
+    gradient.add_key(1.0, Vec4::new(0.3, 0.1, 0.0, 0.0)); // Dark red fade
+    
+    // Create module for expressions
+    let mut module = Module::default();
+    
+    // Spawn particles in a sphere surface
+    let init_pos = SetPositionSphereModifier {
+        center: module.lit(Vec3::ZERO),
+        radius: module.lit(5.0),
+        dimension: ShapeDimension::Surface,
+    };
+    
+    // Particles shoot outward
+    let init_vel = SetVelocitySphereModifier {
+        center: module.lit(Vec3::ZERO),
+        speed: module.lit(100.0),
+    };
+    
+    let lifetime = module.lit(0.6);
+    let init_lifetime = SetAttributeModifier::new(Attribute::LIFETIME, lifetime);
+    
+    // Fast spawn rate for burst effect
+    let spawner = SpawnerSettings::rate(200.0.into());
+    
+    let effect = EffectAsset::new(32768, spawner, module)
+        .with_name("explosion")
+        .init(init_pos)
+        .init(init_vel)
+        .init(init_lifetime)
+        .render(ColorOverLifetimeModifier {
+            gradient,
+            blend: ColorBlendMode::Overwrite,
+            mask: ColorBlendMask::RGBA,
+        })
+        .render(SizeOverLifetimeModifier {
+            gradient: Gradient::constant(Vec3::new(4.0, 4.0, 1.0)),
+            screen_space_size: false,
+        });
+    
+    let effect_handle = effects.add(effect);
+    
+    // Spawn the effect entity - will spawn particles for 0.3s then despawn
+    commands.spawn((
+        Name::new("Explosion"),
+        ParticleEffect::new(effect_handle),
+        Transform::from_translation(position),
+        // Despawn after short time
+        Lifetime::new(0.3),
+    ));
 }
 
 /// Helper struct to represent a player-asteroid collision
