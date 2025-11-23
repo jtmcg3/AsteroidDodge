@@ -203,6 +203,7 @@ pub fn handle_restart(
     mut game_state: ResMut<GameState>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
+    physics_config: Res<PhysicsConfig>,
     game_over_query: Query<Entity, With<GameOverText>>,
     asteroid_query: Query<Entity, With<Asteroid>>,
 ) {
@@ -227,6 +228,6 @@ pub fn handle_restart(
         }
         
         // Respawn player
-        crate::systems::player::spawn_player(commands, asset_server);
+        crate::systems::player::spawn_player(commands, asset_server, physics_config);
     }
 }

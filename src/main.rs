@@ -62,6 +62,7 @@ fn main() {
             spawn_background,
             spawn_player,
             setup_health_display,
+            setup_score_display,
             // WASM-specific: Add browser logging setup
             #[cfg(target_arch = "wasm32")]
             setup_browser_logging,
@@ -79,6 +80,7 @@ fn main() {
             handle_collisions_simple,
             // UI updates
             update_health_display,
+            update_score_display,
             show_game_over,
             // Rendering (debug visualization)
             //draw_asteroid_shapes,

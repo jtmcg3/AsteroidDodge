@@ -7,7 +7,7 @@ use crate::resources::*;
 /// 
 /// Rust Concept: Commands pattern in Bevy
 /// Commands queue entity creation/deletion to happen after the system runs
-pub fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>) {
+pub fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>, config: Res<PhysicsConfig>) {
     commands.spawn((
         // Visual representation
         Sprite {
@@ -30,10 +30,15 @@ pub fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>) {
         ),  // Simple circle collider for the player
         // Rust Concept: Type inference
         // Rust infers the Mass type from context
-        Mass(2.0),
+        Mass(15.0), // starting, likely want to variablize this
         // Lock rotation so player stays upright
-        LockedAxes::ROTATION_LOCKED,
         CollisionEventsEnabled,
+        // Physics config
+        // Use ConstantForce/Torque for persistent thruster forces
+        ConstantForce::default(),
+        ConstantTorque::default(),
+        LinearDamping(config.drag),
+        AngularDamping(config.angular_drag), 
     ));
 }
 
@@ -44,45 +49,62 @@ pub fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>) {
 pub fn player_movement(
     keyboard: Res<ButtonInput<KeyCode>>,
     physics_config: Res<PhysicsConfig>,
-    _time: Res<Time>,
-    mut query: Query<&mut LinearVelocity, With<Player>>,
+    mut query: Query<(&mut ConstantForce, &mut ConstantTorque, &Transform), With<Player>>,
 ) {
     // Rust Concept: Early return pattern
     // If no player exists, just return
-    let Ok(mut linear_velocity) = query.single_mut() else {
+    let Ok((mut constant_force, mut constant_torque, transform)) = query.single_mut() else {
         return;
     };
     
     // Calculate movement direction from input
     // Rust Concept: Accumulator pattern
-    let mut direction = Vec2::ZERO;
+    // Reset forces each frame since we are simulating thrusters
+    constant_force.0 = Vec2::ZERO;
+    constant_torque.0 = 0.0;
+    
+    // which thrusters are active
+    let mut left_thruster_active = false;
+    let mut right_thruster_active = false;
+    let mut reverse_active = false;
     
     // Rust Concept: if expressions (not statements)
-    // Each if can be part of a larger expression
+    // left arrow fires right thruster
     if keyboard.pressed(KeyCode::ArrowLeft) || keyboard.pressed(KeyCode::KeyA) {
-        direction.x -= 1.0;
+        right_thruster_active = true;
     }
     if keyboard.pressed(KeyCode::ArrowRight) || keyboard.pressed(KeyCode::KeyD) {
-        direction.x += 1.0;
+        left_thruster_active = true;
     }
     if keyboard.pressed(KeyCode::ArrowUp) || keyboard.pressed(KeyCode::KeyW) {
-        direction.y += 1.0;
+        left_thruster_active = true;
+        right_thruster_active = true;
     }
     if keyboard.pressed(KeyCode::ArrowDown) || keyboard.pressed(KeyCode::KeyS) {
-        direction.y -= 1.0;
+        reverse_active = true;
     }
     
-    // Normalize direction to prevent faster diagonal movement
-    // Rust Concept: Method chaining with conditional logic
-    if direction.length() > 0.0 {
-        direction = direction.normalize();
-    }
+    // Apply Physics
+
+    let forward = (transform.rotation * Vec3::Y).truncate();
     
-    // Apply velocity
-    // Rust Concept: Direct field access through DerefMut
-    // LinearVelocity can be treated like a Vec2
-    linear_velocity.x = direction.x * physics_config.player_speed;
-    linear_velocity.y = direction.y * physics_config.player_speed;
+    //left thruster
+    if left_thruster_active {
+        constant_force.0 += forward * physics_config.thruster_force;
+        constant_torque.0 -= physics_config.rotation_torque;
+    }
+
+    //right thruster
+    if right_thruster_active {
+        constant_force.0 += forward * physics_config.thruster_force;
+        constant_torque.0 += physics_config.rotation_torque;
+    }
+
+    //reverse thruster
+    if reverse_active {
+        constant_force.0 -= forward * physics_config.reverse_thrust_force;
+    }
+
 }
 
 /// Keep player within screen bounds
@@ -139,15 +161,17 @@ pub(crate) struct HealthDisplay;
 pub fn update_health_display(
     player_query: Query<&Health, With<Player>>,
     mut text_query: Query<&mut Text, With<HealthDisplay>>,
+    game_state: Res<GameState>,
 ) {
-    let Ok(health) = player_query.single() else {
-        return;
-    };
-    
     let Ok(mut text) = text_query.single_mut() else {
         return;
     };
-    
-    // Rust Concept: String formatting with format! macro
-    *text = Text::new(format!("Health: {:.0}", health.current()));
+
+    if let Ok(health) = player_query.single() {
+        // Player is alive, show current health
+        *text = Text::new(format!("Health: {:.0}", health.current()));
+    } else if game_state.is_game_over {
+        // Player is dead (despawned), show 0
+        *text = Text::new("Health: 0");
+    }
 }

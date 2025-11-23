@@ -16,9 +16,13 @@ pub fn spawn_asteroids(
     difficulty: Res<DifficultyConfig>,
     config: Res<AsteroidSpawnConfig>,
     time: Res<Time>,
+    game_state: Res<GameState>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
+    if game_state.is_game_over {
+        return;
+    }
 
     // update elapsed time
     spawn_timer.elapsed_time += time.delta_secs();
