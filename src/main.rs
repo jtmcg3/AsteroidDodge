@@ -18,15 +18,27 @@ mod systems;
 use resources::*;
 use systems::*;
 
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen::prelude::*;
+
 fn main() {
     App::new()
         // Rust Concept: Plugin composition
         // Bevy apps are built by composing plugins
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
-                title: "Asteroid Dodge - Physics Edition".to_string(),
+                title: "Asteroid Dodge".to_string(),
+                #[cfg(not(target_arch = "wasm32"))]
                 resolution: bevy::window::WindowResolution::new(800, 600),
+                #[cfg(not(target_arch = "wasm32"))]
                 resizable: false,
+
+                #[cfg(target_arch = "wasm32")]
+                fit_canvas_to_parent: true,
+                #[cfg(target_arch = "wasm32")]
+                prevent_default_event_handling: true,
+                #[cfg(target_arch = "wasm32")]
+                canvas: Some("#game-canvas".to_string()),
                 ..default()
             }),
             ..default()
@@ -50,6 +62,9 @@ fn main() {
             spawn_background,
             spawn_player,
             setup_health_display,
+            // WASM-specific: Add browser logging setup
+            #[cfg(target_arch = "wasm32")]
+            setup_browser_logging,
         ))
         // Update systems (run every frame)
         // Rust Concept: System sets for organization
@@ -79,6 +94,23 @@ fn main() {
 /// Rust Concept: Simple startup system
 fn setup_camera(mut commands: Commands) {
     commands.spawn(Camera2d);
+}
+
+// Required for WASM builds
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen(start)]
+pub fn wasm_main() {
+    // Initialize panic hook for better error messages in browser console
+    console_error_panic_hook::set_once();
+    
+    main();
+}
+
+// Helper system for WASM logging setup
+#[cfg(target_arch = "wasm32")]
+fn setup_browser_logging() {
+    use web_sys::console;
+    console::log_1(&"Asteroid Dodge initialized for web!".into());
 }
 
 // Rust Concept: Conditional compilation for tests

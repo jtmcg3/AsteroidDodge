@@ -228,8 +228,11 @@ dependencies = [
  "bevy",
  "bevy_asset",
  "bevy_mesh",
+ "console_error_panic_hook",
  "image 0.24.9",
  "rand",
+ "wasm-bindgen",
+ "web-sys",
  "wgpu-types 24.0.0",
 ]
 
