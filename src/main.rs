@@ -88,6 +88,7 @@ fn main() {
             update_health_display,
             update_score_display,
             show_game_over,
+            update_thruster_visuals,
             // Rendering (debug visualization)
             //draw_asteroid_shapes,
         ))

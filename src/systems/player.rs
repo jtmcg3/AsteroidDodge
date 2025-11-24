@@ -1,17 +1,69 @@
 use bevy::prelude::*;
 use avian2d::prelude::*;
+use bevy_hanabi::prelude::*;
 use crate::components::*;
 use crate::resources::*;
 
+/// Create a thruster particle effect
+fn create_thruster_effect(effects: &mut ResMut<Assets<EffectAsset>>) -> Handle<EffectAsset> {
+    use bevy_hanabi::prelude::*;
+    
+    // Orange/yellow flame gradient
+    let mut gradient = Gradient::new();
+    gradient.add_key(0.0, Vec4::new(1.0, 0.9, 0.3, 1.0)); // Bright yellow
+    gradient.add_key(0.5, Vec4::new(1.0, 0.5, 0.1, 0.8)); // Orange
+    gradient.add_key(1.0, Vec4::new(0.8, 0.2, 0.0, 0.0)); // Dark orange fade
+    
+    let mut module = Module::default();
+    
+    // Spawn particles in a small cone
+    let init_pos = SetPositionCone3dModifier {
+        base_radius: module.lit(2.0),
+        top_radius: module.lit(0.5),
+        height: module.lit(5.0),
+        dimension: ShapeDimension::Volume,
+    };
+    
+    // Particles move along the cone axis (backward for thruster)
+    let init_vel = SetVelocityCircleModifier {
+        center: module.lit(Vec3::ZERO),
+        axis: module.lit(Vec3::NEG_Y), // Shoot backward
+        speed: module.lit(50.0),
+    };
+    
+    let lifetime = module.lit(0.3);
+    let init_lifetime = SetAttributeModifier::new(Attribute::LIFETIME, lifetime);
+    
+    let spawner = SpawnerSettings::rate(80.0.into());
+    
+    let effect = EffectAsset::new(8192, spawner, module)
+        .with_name("thruster")
+        .init(init_pos)
+        .init(init_vel)
+        .init(init_lifetime)
+        .render(ColorOverLifetimeModifier {
+            gradient,
+            blend: ColorBlendMode::Overwrite,
+            mask: ColorBlendMask::RGBA,
+        })
+        .render(SizeOverLifetimeModifier {
+            gradient: Gradient::constant(Vec3::new(3.0, 3.0, 1.0)),
+            screen_space_size: false,
+        });
+    
+    effects.add(effect)
+}
+
 /// Spawn the player entity
-/// 
-/// Rust Concept: Commands pattern in Bevy
-/// Commands queue entity creation/deletion to happen after the system runs
 pub fn spawn_player(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     config: Res<PhysicsConfig>,
+    mut effects: ResMut<Assets<EffectAsset>>,
 ) {
+    // Create thruster effect
+    let thruster_effect = create_thruster_effect(&mut effects);
+    
     commands.spawn((
         // Visual representation
         Sprite {
@@ -37,7 +89,45 @@ pub fn spawn_player(
         ConstantTorque::default(),
         LinearDamping(config.drag),
         AngularDamping(config.angular_drag), 
-    ));
+    )).with_children(|children| {
+        // Left main thruster (under left wing, fires backward)
+        children.spawn((
+            Name::new("LeftMainThruster"),
+            ParticleEffect::new(thruster_effect.clone()),
+            Transform::from_translation(Vec3::new(-12.0, -15.0, -1.0)),
+            Thruster::Left,
+            ThrusterType::Main,
+        ));
+        
+        // Right main thruster (under right wing, fires backward)
+        children.spawn((
+            Name::new("RightMainThruster"),
+            ParticleEffect::new(thruster_effect.clone()),
+            Transform::from_translation(Vec3::new(12.0, -15.0, -1.0)),
+            Thruster::Right,
+            ThrusterType::Main,
+        ));
+        
+        // Left reverse thruster (front left, fires forward)
+        children.spawn((
+            Name::new("LeftReverseThruster"),
+            ParticleEffect::new(thruster_effect.clone()),
+            Transform::from_translation(Vec3::new(-10.0, 15.0, -1.0))
+                .with_rotation(Quat::from_rotation_z(std::f32::consts::PI)), // Rotate 180°
+            Thruster::Left,
+            ThrusterType::Reverse,
+        ));
+        
+        // Right reverse thruster (front right, fires forward)
+        children.spawn((
+            Name::new("RightReverseThruster"),
+            ParticleEffect::new(thruster_effect),
+            Transform::from_translation(Vec3::new(10.0, 15.0, -1.0))
+                .with_rotation(Quat::from_rotation_z(std::f32::consts::PI)), // Rotate 180°
+            Thruster::Right,
+            ThrusterType::Reverse,
+        ));
+    });
 }
 
 /// Handle player movement with keyboard input
@@ -211,5 +301,51 @@ pub fn update_health_display(
     } else if game_state.is_game_over {
         // Player is dead (despawned), show 0
         *text = Text::new("Health: 0");
+    }
+}
+
+/// Update thruster particle effects based on input
+pub fn update_thruster_visuals(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut query: Query<(&Thruster, &ThrusterType, &mut Visibility)>,
+) {
+    let mut left_main_active = false;
+    let mut right_main_active = false;
+    let mut left_reverse_active = false;
+    let mut right_reverse_active = false;
+
+    // Logic matches player_movement
+    // Left Arrow -> Fires Right Thruster
+    if keyboard.pressed(KeyCode::ArrowLeft) || keyboard.pressed(KeyCode::KeyA) {
+        right_main_active = true;
+    }
+    // Right Arrow -> Fires Left Thruster
+    if keyboard.pressed(KeyCode::ArrowRight) || keyboard.pressed(KeyCode::KeyD) {
+        left_main_active = true;
+    }
+    // Up Arrow -> Fires BOTH main thrusters
+    if keyboard.pressed(KeyCode::ArrowUp) || keyboard.pressed(KeyCode::KeyW) {
+        left_main_active = true;
+        right_main_active = true;
+    }
+    // Down Arrow -> Fires BOTH reverse thrusters
+    if keyboard.pressed(KeyCode::ArrowDown) || keyboard.pressed(KeyCode::KeyS) {
+        left_reverse_active = true;
+        right_reverse_active = true;
+    }
+
+    for (thruster, thruster_type, mut visibility) in query.iter_mut() {
+        let active = match (thruster, thruster_type) {
+            (Thruster::Left, ThrusterType::Main) => left_main_active,
+            (Thruster::Right, ThrusterType::Main) => right_main_active,
+            (Thruster::Left, ThrusterType::Reverse) => left_reverse_active,
+            (Thruster::Right, ThrusterType::Reverse) => right_reverse_active,
+        };
+        
+        *visibility = if active {
+            Visibility::Visible
+        } else {
+            Visibility::Hidden
+        };
     }
 }

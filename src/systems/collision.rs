@@ -334,6 +334,7 @@ pub fn handle_restart(
     physics_config: Res<PhysicsConfig>,
     game_over_query: Query<Entity, With<GameOverText>>,
     asteroid_query: Query<Entity, With<Asteroid>>,
+    effects: ResMut<Assets<EffectAsset>>,
 ) {
     if !game_state.is_game_over {
         return;
@@ -356,6 +357,6 @@ pub fn handle_restart(
         }
         
         // Respawn player
-        crate::systems::player::spawn_player(commands, asset_server, physics_config);
+        crate::systems::player::spawn_player(commands, asset_server, physics_config, effects);
     }
 }

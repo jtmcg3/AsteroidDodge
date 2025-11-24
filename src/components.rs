@@ -136,3 +136,9 @@ pub enum Thruster {
     Left,
     Right,
 }
+
+#[derive(Component)]
+pub enum ThrusterType {
+    Main,    // Fires backward
+    Reverse, // Fires forward
+}
