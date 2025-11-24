@@ -15,6 +15,6 @@ Objectives:
 - Destroy asteroids with projectiles
 - Don't die
 
-![Gameplay](docs/assetss/asteroid_dodge_gameplay.gif)
+![Gameplay](./docs/assets/asteroid_dodge_gameplay.gif)
 
 Licence: ? MIT i guess, this is just for fun
