@@ -105,7 +105,7 @@ pub fn handle_projectile_collisions(
     mut commands: Commands,
     mut collision_events: MessageReader<CollisionStart>,
     mut game_state: ResMut<GameState>,
-    projectile_query: Query<(Entity, &LinearVelocity), With<Projectile>>,
+    projectile_query: Query<(Entity, &LinearVelocity, &Transform), With<Projectile>>,
     asteroid_query: Query<(Entity, &AsteroidSize, &Transform, &LinearVelocity), With<Asteroid>>,
     mut effects: ResMut<Assets<EffectAsset>>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -117,14 +117,16 @@ pub fn handle_projectile_collisions(
         
         let projectile_entity;
         let projectile_velocity;
+        let projectile_position;
         let asteroid_entity;
         let asteroid_size;
         let asteroid_position;
         let asteroid_velocity;
         
-        if let Ok((proj_ent, proj_vel)) = projectile_query.get(entity1) {
+        if let Ok((proj_ent, proj_vel, proj_trans)) = projectile_query.get(entity1) {
             projectile_entity = proj_ent;
             projectile_velocity = proj_vel.0;
+            projectile_position = proj_trans.translation;
             if let Ok((ast_ent, size, transform, ast_vel)) = asteroid_query.get(entity2) {
                 asteroid_entity = ast_ent;
                 asteroid_size = size;
@@ -133,9 +135,10 @@ pub fn handle_projectile_collisions(
             } else {
                 continue;
             }
-        } else if let Ok((proj_ent, proj_vel)) = projectile_query.get(entity2) {
+        } else if let Ok((proj_ent, proj_vel, proj_trans)) = projectile_query.get(entity2) {
             projectile_entity = proj_ent;
             projectile_velocity = proj_vel.0;
+            projectile_position = proj_trans.translation;
             if let Ok((ast_ent, size, transform, ast_vel)) = asteroid_query.get(entity1) {
                 asteroid_entity = ast_ent;
                 asteroid_size = size;
@@ -174,16 +177,36 @@ pub fn handle_projectile_collisions(
             // Impact influence (projectile pushes asteroid)
             let impact_impulse = projectile_velocity * 0.4; // 40% of projectile speed transfers
             let base_velocity = asteroid_velocity + impact_impulse;
-            // Split force (perpendicular to direction)
-            let split_dir = Vec2::new(-base_velocity.y, base_velocity.x).normalize_or_zero();
+
+            // Split force (perpendicular to PROJECTILE direction)
+            // Robust calculation: Use velocity if significant, otherwise use relative position
+            let impact_dir = if projectile_velocity.length_squared() > 1.0 {
+                projectile_velocity.normalize()
+            } else {
+                (asteroid_position - projectile_position).truncate().normalize_or_zero()
+            };
+
+            // If projectile is moving (vx, vy), perpendicular is (-vy, vx)
+            let split_dir = Vec2::new(-impact_dir.y, impact_dir.x);
             let split_speed = 100.0; // Adjust as needed
             
+            info!("Splitting asteroid: ProjVel={:?}, ImpactDir={:?}, SplitDir={:?}", projectile_velocity, impact_dir, split_dir);
+            
+            // One piece goes "up" (relative to impact), one goes "down"
             let vel1 = base_velocity + (split_dir * split_speed);
             let vel2 = base_velocity - (split_dir * split_speed);
+
+            // Calculate offset to prevent overlap
+            // We want them to start roughly edge-to-edge
+            // Distance from center = radius
+            // So we move them apart by their respective radii
+            let offset_dist = size1.radius() + size2.radius() + 5.0; // +5.0 padding
+            let offset = split_dir * (offset_dist * 0.5); // Move each half the distance
+
             // 4. Spawn Children
             // Note: You'll need to pass meshes/materials resources to this system
-            spawn_asteroid_entity(&mut commands, &mut meshes, &mut materials, asteroid_position, vel1, size1);
-            spawn_asteroid_entity(&mut commands, &mut meshes, &mut materials, asteroid_position, vel2, size2);
+            spawn_asteroid_entity(&mut commands, &mut meshes, &mut materials, asteroid_position + offset.extend(0.0), vel1, size1);
+            spawn_asteroid_entity(&mut commands, &mut meshes, &mut materials, asteroid_position - offset.extend(0.0), vel2, size2);
         }
     }
 }   
