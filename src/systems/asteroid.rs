@@ -60,11 +60,33 @@ pub fn spawn_asteroids(
     let speed_y = -rng.random_range(config.min_speed..config.max_speed);
     let speed_x = rng.random_range(-50.0..50.0);
     
-    // Random rotation speed
-    let angular_velocity = rng.random_range(-2.0..2.0);
-    
-    // Generate irregular polygon shape
-    // Rust Concept: Using our trait-based generator
+    let velocity = Vec2::new(speed_x, speed_y);
+    let position = Vec3::new(x, y, 0.0);
+
+
+
+    spawn_asteroid_entity(
+        &mut commands,
+        &mut meshes,
+        &mut materials,
+        position,
+        velocity,
+        size,
+    );
+
+}
+
+// Helper function to spawn asteroids
+pub fn spawn_asteroid_entity(
+    commands: &mut Commands,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<ColorMaterial>>,
+    position: Vec3,
+    velocity: Vec2,
+    size: AsteroidSize,
+) {
+    let mut rng = rand::rng();
+    // 1. Generate Asteroid shape
     let generator = IrregularPolygonGenerator::new(
         size.vertex_count(),
         size.radius(),
@@ -92,7 +114,7 @@ pub fn spawn_asteroids(
     let mesh_handle = meshes.add(mesh);
 
     // create material with asteroid color
-    let material = materials.add(ColorMaterial::from(Color::srgb(0.7,0.4,0.3)));
+    let material = materials.add(ColorMaterial::from(Color::srgb(0.5,0.5,0.7)));
 
 
     // Spawn the asteroid entity
@@ -102,7 +124,7 @@ pub fn spawn_asteroids(
         // Visual (we'll render custom mesh later)
         Mesh2d(mesh_handle),
         MeshMaterial2d(material),
-        Transform::from_xyz(x, y, 0.0),
+        Transform::from_translation(position),
         // Game components
         Asteroid,
         size,
@@ -112,8 +134,8 @@ pub fn spawn_asteroids(
         RigidBody::Dynamic,
         collider,
         CollisionEventsEnabled,
-        LinearVelocity(Vec2::new(speed_x, speed_y)),
-        AngularVelocity(angular_velocity),
+        LinearVelocity(velocity),
+        AngularVelocity(rng.random_range(-2.0..2.0)),
         Mass(size.mass()),
         // Restitution (bounciness) - asteroids bounce off each other a bit
         Restitution::new(0.3),

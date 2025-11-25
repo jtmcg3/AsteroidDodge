@@ -79,8 +79,8 @@ pub fn spawn_player(
         RigidBody::Dynamic,
         Collider::triangle(
             Vec2::new(0.0, 20.0),
-            Vec2::new(-20.0, -20.0),
-            Vec2::new(20.0, -20.0),
+            Vec2::new(-20.0, -15.0),
+            Vec2::new(20.0, -15.0),
         ),
         Mass(15.0),
         CollisionEventsEnabled,

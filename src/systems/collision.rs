@@ -3,6 +3,7 @@ use avian2d::prelude::*;
 use bevy_hanabi::prelude::*;
 use crate::components::*;
 use crate::resources::*;
+use crate::systems::asteroid::spawn_asteroid_entity;
 
 /// Handle collisions between player and asteroids
 /// 
@@ -104,41 +105,49 @@ pub fn handle_projectile_collisions(
     mut commands: Commands,
     mut collision_events: MessageReader<CollisionStart>,
     mut game_state: ResMut<GameState>,
-    projectile_query: Query<Entity, With<Projectile>>,
-    asteroid_query: Query<(Entity, &AsteroidSize, &Transform), With<Asteroid>>,
+    projectile_query: Query<(Entity, &LinearVelocity), With<Projectile>>,
+    asteroid_query: Query<(Entity, &AsteroidSize, &Transform, &LinearVelocity), With<Asteroid>>,
     mut effects: ResMut<Assets<EffectAsset>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     for event in collision_events.read() {
         let entity1 = event.body1.unwrap();
         let entity2 = event.body2.unwrap();
         
         let projectile_entity;
+        let projectile_velocity;
         let asteroid_entity;
         let asteroid_size;
         let asteroid_position;
+        let asteroid_velocity;
         
-        if projectile_query.contains(entity1) {
-            projectile_entity = entity1;
-            if let Ok((ast_ent, size, transform)) = asteroid_query.get(entity2) {
+        if let Ok((proj_ent, proj_vel)) = projectile_query.get(entity1) {
+            projectile_entity = proj_ent;
+            projectile_velocity = proj_vel.0;
+            if let Ok((ast_ent, size, transform, ast_vel)) = asteroid_query.get(entity2) {
                 asteroid_entity = ast_ent;
                 asteroid_size = size;
                 asteroid_position = transform.translation;
+                asteroid_velocity = ast_vel.0;
             } else {
                 continue;
             }
-        } else if projectile_query.contains(entity2) {
-            projectile_entity = entity2;
-            if let Ok((ast_ent, size, transform)) = asteroid_query.get(entity1) {
+        } else if let Ok((proj_ent, proj_vel)) = projectile_query.get(entity2) {
+            projectile_entity = proj_ent;
+            projectile_velocity = proj_vel.0;
+            if let Ok((ast_ent, size, transform, ast_vel)) = asteroid_query.get(entity1) {
                 asteroid_entity = ast_ent;
                 asteroid_size = size;
                 asteroid_position = transform.translation;
+                asteroid_velocity = ast_vel.0;
             } else {
                 continue;
             }
         } else {
             continue;
         }
-        
+
         // Collision confirmed
         commands.entity(projectile_entity).despawn();
         commands.entity(asteroid_entity).despawn();
@@ -153,8 +162,31 @@ pub fn handle_projectile_collisions(
         
         // Spawn explosion particle effect
         spawn_explosion(&mut commands, &mut effects, asteroid_position);
+
+        // 2. Determine children
+        let children_sizes = match asteroid_size {
+            AsteroidSize::Large => Some((AsteroidSize::Medium, AsteroidSize::Small)),
+            AsteroidSize::Medium => Some((AsteroidSize::Small, AsteroidSize::Small)),
+            AsteroidSize::Small => None,
+        };
+        if let Some((size1, size2)) = children_sizes {
+            // 3. Calculate Velocities
+            // Impact influence (projectile pushes asteroid)
+            let impact_impulse = projectile_velocity * 0.4; // 40% of projectile speed transfers
+            let base_velocity = asteroid_velocity + impact_impulse;
+            // Split force (perpendicular to direction)
+            let split_dir = Vec2::new(-base_velocity.y, base_velocity.x).normalize_or_zero();
+            let split_speed = 100.0; // Adjust as needed
+            
+            let vel1 = base_velocity + (split_dir * split_speed);
+            let vel2 = base_velocity - (split_dir * split_speed);
+            // 4. Spawn Children
+            // Note: You'll need to pass meshes/materials resources to this system
+            spawn_asteroid_entity(&mut commands, &mut meshes, &mut materials, asteroid_position, vel1, size1);
+            spawn_asteroid_entity(&mut commands, &mut meshes, &mut materials, asteroid_position, vel2, size2);
+        }
     }
-}
+}   
 
 /// Spawn an explosion particle effect at the given position
 fn spawn_explosion(
