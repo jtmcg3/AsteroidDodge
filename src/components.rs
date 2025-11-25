@@ -76,9 +76,9 @@ impl AsteroidSize {
     // get the mass for physics
     pub fn mass(&self) -> f32 {
         match self {
-            Self::Small => 1.0,
-            Self::Medium => 3.0,
-            Self::Large => 7.0,
+            Self::Small => 7.0,
+            Self::Medium => 15.0,
+            Self::Large => 35.0,
         }
     }
 

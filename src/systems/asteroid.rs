@@ -138,7 +138,7 @@ pub fn spawn_asteroid_entity(
         AngularVelocity(rng.random_range(-2.0..2.0)),
         Mass(size.mass()),
         // Restitution (bounciness) - asteroids bounce off each other a bit
-        Restitution::new(0.3),
+        Restitution::new(0.8),
     ));
 }
 
