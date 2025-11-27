@@ -142,3 +142,6 @@ pub enum ThrusterType {
     Main,    // Fires backward
     Reverse, // Fires forward
 }
+
+#[derive(Component)]
+pub struct ThrusterAudio;

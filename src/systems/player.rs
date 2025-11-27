@@ -63,8 +63,10 @@ pub fn spawn_player(
 ) {
     // Create thruster effect
     let thruster_effect = create_thruster_effect(&mut effects);
+    let thruster_sound: Handle<AudioSource> = asset_server.load("audio/kenney_sci-fi-sounds/Audio/thrusterFire_004.ogg");
     
     commands.spawn((
+        // Visual representation
         // Visual representation
         Sprite {
             image: asset_server.load("sprites/ship_G.png"),
@@ -126,6 +128,13 @@ pub fn spawn_player(
                 .with_rotation(Quat::from_rotation_z(std::f32::consts::PI)), // Rotate 180°
             Thruster::Right,
             ThrusterType::Reverse,
+        ));
+
+        // Add the audio component
+        children.spawn((
+            AudioPlayer(thruster_sound),
+            PlaybackSettings::LOOP.paused(),
+            ThrusterAudio,
         ));
     });
 }
@@ -193,6 +202,31 @@ pub fn player_movement(
         constant_force.0 -= forward * physics_config.reverse_thrust_force;
     }
 
+}
+
+
+pub fn update_thruster_audio(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    query: Query<&AudioSink, With<ThrusterAudio>>,
+) {
+    // We expect only one thruster audio entity
+    let Ok(sink) = query.single() else {
+        return;
+    };
+    // Check if any thruster key is pressed
+    let is_thrusting = keyboard.pressed(KeyCode::ArrowUp) || keyboard.pressed(KeyCode::KeyW) ||
+                       keyboard.pressed(KeyCode::ArrowDown) || keyboard.pressed(KeyCode::KeyS) ||
+                       keyboard.pressed(KeyCode::ArrowLeft) || keyboard.pressed(KeyCode::KeyA) ||
+                       keyboard.pressed(KeyCode::ArrowRight) || keyboard.pressed(KeyCode::KeyD);
+    if is_thrusting {
+        if sink.is_paused() {
+            sink.play();
+        }
+    } else {
+        if !sink.is_paused() {
+            sink.pause();
+        }
+    }
 }
 
 /// Handle player firing

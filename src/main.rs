@@ -89,6 +89,7 @@ fn main() {
             update_score_display,
             show_game_over,
             update_thruster_visuals,
+            update_thruster_audio,
             // Rendering (debug visualization)
             //draw_asteroid_shapes,
         ))
