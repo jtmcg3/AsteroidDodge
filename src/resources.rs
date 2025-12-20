@@ -1,13 +1,39 @@
 // Resources are singletons, one instance per app
 use bevy::prelude::*;
 
+#[derive(Debug, States, Clone, PartialEq, Eq, Hash, Default)]
+pub enum AppState {
+    #[default]
+    Menu, // Start Screen
+    Playing,  // Active Gameplay - will have levels and such
+    Paused,   // Non-active Gameplay, halt cycles?
+    GameOver, // Game Over Screen + High Scores }
+}
+
 #[derive(Resource)]
-pub struct GameState {
+struct PlayerSettings {
+    ship_type: ShipType,
+    name: String,
+}
+
+#[derive(Debug, Default)]
+pub enum ShipType {
+    #[default]
+    SimpleShip,
+}
+
+#[derive(Resource)]
+struct HighScores {
+    scores: Vec<(String, u32)>, // name, score
+}
+
+#[derive(Resource)]
+pub struct GameData {
     pub score: u32,
     pub is_game_over: bool,
 }
 
-impl Default for GameState {
+impl Default for GameData {
     fn default() -> Self {
         Self {
             score: 0,
@@ -35,8 +61,8 @@ impl Default for DifficultyConfig {
     fn default() -> Self {
         Self {
             initial_interval: 1.5,
-            min_interval:0.1,
-            curve_steepness:0.1 // lower = more gradual increase in difficulty
+            min_interval: 0.1,
+            curve_steepness: 0.1, // lower = more gradual increase in difficulty
         }
     }
 }
@@ -44,9 +70,9 @@ impl Default for DifficultyConfig {
 impl DifficultyConfig {
     // calc spawn interval based on elapsed time
     pub fn calculate_interval(&self, elapsed_time: f32) -> f32 {
-        self.min_interval + 
-            (self.initial_interval - self.min_interval) /
-            (1.0 + self.curve_steepness * elapsed_time)
+        self.min_interval
+            + (self.initial_interval - self.min_interval)
+                / (1.0 + self.curve_steepness * elapsed_time)
     }
 }
 
@@ -108,7 +134,7 @@ impl Default for PhysicsConfig {
 }
 
 /// Display player score (simple text for now)
-/// 
+///
 /// Rust Concept: One-shot systems for UI setup
 pub fn setup_score_display(mut commands: Commands) {
     commands.spawn((
@@ -133,18 +159,17 @@ pub fn setup_score_display(mut commands: Commands) {
 pub(crate) struct ScoreDisplay;
 
 /// Update score display
-/// 
+///
 /// Rust Concept: Optional query results
 /// Using Option<> for queries that might not have results
 pub fn update_score_display(
     spawn_timer: Res<SpawnTimer>,
     mut text_query: Query<&mut Text, With<ScoreDisplay>>,
 ) {
-    
     let Ok(mut text) = text_query.single_mut() else {
         return;
     };
-    
+
     // Rust Concept: String formatting with format! macro
     *text = Text::new(format!("Score: {:.0}", spawn_timer.elapsed_time));
 }

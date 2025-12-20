@@ -1,14 +1,14 @@
 // main.rs
 //! Asteroid Dodge - A physics-based space survival game
-//! 
+//!
 //! This game demonstrates:
 //! - Avian Physics integration with Bevy ECS
 //! - Procedural polygon generation
 //! - Event-driven collision handling
 //! - Idiomatic Rust patterns
 
-use bevy::prelude::*;
 use avian2d::prelude::*;
+use bevy::prelude::*;
 use bevy_hanabi::prelude::*;
 
 mod components;
@@ -52,47 +52,53 @@ fn main() {
         // Rust Concept: Resource insertion for configuration
         .insert_resource(Gravity(Vec2::ZERO)) // No gravity in space!
         // Initialize our game resources
-        .init_resource::<GameState>()
+        .init_resource::<GameData>()
         .init_resource::<SpawnTimer>()
         .init_resource::<AsteroidSpawnConfig>()
         .init_resource::<PhysicsConfig>()
         .init_resource::<DifficultyConfig>()
         // Startup systems (run once at launch)
         // Rust Concept: System scheduling with tuples
-        .add_systems(Startup, (
-            setup_camera,
-            spawn_background,
-            spawn_player,
-            setup_health_display,
-            setup_score_display,
-            // WASM-specific: Add browser logging setup
-            #[cfg(target_arch = "wasm32")]
-            setup_browser_logging,
-        ))
+        .add_systems(
+            Startup,
+            (
+                setup_camera,
+                spawn_background,
+                spawn_player,
+                setup_health_display,
+                setup_score_display,
+                // WASM-specific: Add browser logging setup
+                #[cfg(target_arch = "wasm32")]
+                setup_browser_logging,
+            ),
+        )
         // Update systems (run every frame)
         // Rust Concept: System sets for organization
-        .add_systems(Update, (
-            // Input handling
-            player_movement,
-            player_fire,
-            handle_restart,
-            // Spawning and cleanup
-            spawn_asteroids,
-            cleanup_offscreen,
-            move_projectiles,
-            cleanup_projectiles,
-            // Physics and collision (handled by Avian automatically)
-            handle_collisions_simple,
-            handle_projectile_collisions,
-            // UI updates
-            update_health_display,
-            update_score_display,
-            show_game_over,
-            update_thruster_visuals,
-            update_thruster_audio,
-            // Rendering (debug visualization)
-            //draw_asteroid_shapes,
-        ))
+        .add_systems(
+            Update,
+            (
+                // Input handling
+                player_movement,
+                player_fire,
+                handle_restart,
+                // Spawning and cleanup
+                spawn_asteroids,
+                cleanup_offscreen,
+                move_projectiles,
+                cleanup_projectiles,
+                // Physics and collision (handled by Avian automatically)
+                handle_collisions_simple,
+                handle_projectile_collisions,
+                // UI updates
+                update_health_display,
+                update_score_display,
+                show_game_over,
+                update_thruster_visuals,
+                update_thruster_audio,
+                // Rendering (debug visualization)
+                //draw_asteroid_shapes,
+            ),
+        )
         // Rust Concept: System ordering
         // We can specify that certain systems run before others
         .add_systems(Update, constrain_player_position.after(player_movement))
@@ -100,7 +106,7 @@ fn main() {
 }
 
 /// Setup the camera
-/// 
+///
 /// Rust Concept: Simple startup system
 fn setup_camera(mut commands: Commands) {
     commands.spawn(Camera2d);
@@ -112,7 +118,7 @@ fn setup_camera(mut commands: Commands) {
 pub fn wasm_main() {
     // Initialize panic hook for better error messages in browser console
     console_error_panic_hook::set_once();
-    
+
     main();
 }
 
@@ -127,15 +133,14 @@ fn setup_browser_logging() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_app_builds() {
         // Rust Concept: Testing that the app can be constructed
         // This catches common configuration errors
         let mut app = App::new();
-        app.add_plugins(MinimalPlugins)
-            .init_resource::<GameState>();
-        
+        app.add_plugins(MinimalPlugins).init_resource::<GameData>();
+
         // If this doesn't panic, our setup is valid
         app.update();
     }

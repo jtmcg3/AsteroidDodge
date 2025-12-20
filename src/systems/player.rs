@@ -1,21 +1,21 @@
-use bevy::prelude::*;
-use avian2d::prelude::*;
-use bevy_hanabi::prelude::*;
 use crate::components::*;
 use crate::resources::*;
+use avian2d::prelude::*;
+use bevy::prelude::*;
+use bevy_hanabi::prelude::*;
 
 /// Create a thruster particle effect
 fn create_thruster_effect(effects: &mut ResMut<Assets<EffectAsset>>) -> Handle<EffectAsset> {
     use bevy_hanabi::prelude::*;
-    
+
     // Orange/yellow flame gradient
     let mut gradient = Gradient::new();
     gradient.add_key(0.0, Vec4::new(1.0, 0.9, 0.3, 1.0)); // Bright yellow
     gradient.add_key(0.5, Vec4::new(1.0, 0.5, 0.1, 0.8)); // Orange
     gradient.add_key(1.0, Vec4::new(0.8, 0.2, 0.0, 0.0)); // Dark orange fade
-    
+
     let mut module = Module::default();
-    
+
     // Spawn particles in a small cone
     let init_pos = SetPositionCone3dModifier {
         base_radius: module.lit(2.0),
@@ -23,19 +23,19 @@ fn create_thruster_effect(effects: &mut ResMut<Assets<EffectAsset>>) -> Handle<E
         height: module.lit(5.0),
         dimension: ShapeDimension::Volume,
     };
-    
+
     // Particles move along the cone axis (backward for thruster)
     let init_vel = SetVelocityCircleModifier {
         center: module.lit(Vec3::ZERO),
         axis: module.lit(Vec3::NEG_Y), // Shoot backward
         speed: module.lit(50.0),
     };
-    
+
     let lifetime = module.lit(0.3);
     let init_lifetime = SetAttributeModifier::new(Attribute::LIFETIME, lifetime);
-    
+
     let spawner = SpawnerSettings::rate(80.0.into());
-    
+
     let effect = EffectAsset::new(8192, spawner, module)
         .with_name("thruster")
         .init(init_pos)
@@ -50,7 +50,7 @@ fn create_thruster_effect(effects: &mut ResMut<Assets<EffectAsset>>) -> Handle<E
             gradient: Gradient::constant(Vec3::new(3.0, 3.0, 1.0)),
             screen_space_size: false,
         });
-    
+
     effects.add(effect)
 }
 
@@ -63,84 +63,87 @@ pub fn spawn_player(
 ) {
     // Create thruster effect
     let thruster_effect = create_thruster_effect(&mut effects);
-    let thruster_sound: Handle<AudioSource> = asset_server.load("audio/kenney_sci-fi-sounds/Audio/thrusterFire_004.ogg");
-    
-    commands.spawn((
-        // Visual representation
-        // Visual representation
-        Sprite {
-            image: asset_server.load("sprites/ship_G.png"),
-            custom_size: Some(Vec2::new(40.0, 40.0)),
-            ..default()
-        },
-        // Game components
-        Player,
-        Health::new(100.0),
-        Velocity::new(0.0, 0.0),
-        // Physics components
-        RigidBody::Dynamic,
-        Collider::triangle(
-            Vec2::new(0.0, 20.0),
-            Vec2::new(-20.0, -15.0),
-            Vec2::new(20.0, -15.0),
-        ),
-        Mass(15.0),
-        CollisionEventsEnabled,
-        // Physics config
-        ConstantForce::default(),
-        ConstantTorque::default(),
-        LinearDamping(config.drag),
-        AngularDamping(config.angular_drag), 
-    )).with_children(|children| {
-        // Left main thruster (under left wing, fires backward)
-        children.spawn((
-            Name::new("LeftMainThruster"),
-            ParticleEffect::new(thruster_effect.clone()),
-            Transform::from_translation(Vec3::new(-12.0, -15.0, -1.0)),
-            Thruster::Left,
-            ThrusterType::Main,
-        ));
-        
-        // Right main thruster (under right wing, fires backward)
-        children.spawn((
-            Name::new("RightMainThruster"),
-            ParticleEffect::new(thruster_effect.clone()),
-            Transform::from_translation(Vec3::new(12.0, -15.0, -1.0)),
-            Thruster::Right,
-            ThrusterType::Main,
-        ));
-        
-        // Left reverse thruster (front left, fires forward)
-        children.spawn((
-            Name::new("LeftReverseThruster"),
-            ParticleEffect::new(thruster_effect.clone()),
-            Transform::from_translation(Vec3::new(-10.0, 15.0, -1.0))
-                .with_rotation(Quat::from_rotation_z(std::f32::consts::PI)), // Rotate 180°
-            Thruster::Left,
-            ThrusterType::Reverse,
-        ));
-        
-        // Right reverse thruster (front right, fires forward)
-        children.spawn((
-            Name::new("RightReverseThruster"),
-            ParticleEffect::new(thruster_effect),
-            Transform::from_translation(Vec3::new(10.0, 15.0, -1.0))
-                .with_rotation(Quat::from_rotation_z(std::f32::consts::PI)), // Rotate 180°
-            Thruster::Right,
-            ThrusterType::Reverse,
-        ));
+    let thruster_sound: Handle<AudioSource> =
+        asset_server.load("audio/kenney_sci-fi-sounds/Audio/thrusterFire_004.ogg");
 
-        // Add the audio component
-        children.spawn((
-            AudioPlayer(thruster_sound),
-            PlaybackSettings::LOOP.paused(),
-            ThrusterAudio,
-        ));
-    });
+    commands
+        .spawn((
+            // Visual representation
+            // Visual representation
+            Sprite {
+                image: asset_server.load("sprites/ship_G.png"),
+                custom_size: Some(Vec2::new(40.0, 40.0)),
+                ..default()
+            },
+            // Game components
+            Player,
+            Health::new(100.0),
+            Velocity::new(0.0, 0.0),
+            // Physics components
+            RigidBody::Dynamic,
+            Collider::triangle(
+                Vec2::new(0.0, 20.0),
+                Vec2::new(-20.0, -15.0),
+                Vec2::new(20.0, -15.0),
+            ),
+            Mass(15.0),
+            CollisionEventsEnabled,
+            // Physics config
+            ConstantForce::default(),
+            ConstantTorque::default(),
+            LinearDamping(config.drag),
+            AngularDamping(config.angular_drag),
+        ))
+        .with_children(|children| {
+            // Left main thruster (under left wing, fires backward)
+            children.spawn((
+                Name::new("LeftMainThruster"),
+                ParticleEffect::new(thruster_effect.clone()),
+                Transform::from_translation(Vec3::new(-12.0, -15.0, -1.0)),
+                Thruster::Left,
+                ThrusterType::Main,
+            ));
+
+            // Right main thruster (under right wing, fires backward)
+            children.spawn((
+                Name::new("RightMainThruster"),
+                ParticleEffect::new(thruster_effect.clone()),
+                Transform::from_translation(Vec3::new(12.0, -15.0, -1.0)),
+                Thruster::Right,
+                ThrusterType::Main,
+            ));
+
+            // Left reverse thruster (front left, fires forward)
+            children.spawn((
+                Name::new("LeftReverseThruster"),
+                ParticleEffect::new(thruster_effect.clone()),
+                Transform::from_translation(Vec3::new(-10.0, 15.0, -1.0))
+                    .with_rotation(Quat::from_rotation_z(std::f32::consts::PI)), // Rotate 180°
+                Thruster::Left,
+                ThrusterType::Reverse,
+            ));
+
+            // Right reverse thruster (front right, fires forward)
+            children.spawn((
+                Name::new("RightReverseThruster"),
+                ParticleEffect::new(thruster_effect),
+                Transform::from_translation(Vec3::new(10.0, 15.0, -1.0))
+                    .with_rotation(Quat::from_rotation_z(std::f32::consts::PI)), // Rotate 180°
+                Thruster::Right,
+                ThrusterType::Reverse,
+            ));
+
+            // Add the audio component
+            children.spawn((
+                AudioPlayer(thruster_sound),
+                PlaybackSettings::LOOP.paused(),
+                ThrusterAudio,
+            ));
+        });
 }
 
 /// Handle player movement with keyboard input
-/// 
+///
 /// Rust Concept: Multiple query parameters
 /// We can query different entity sets in the same system
 pub fn player_movement(
@@ -153,18 +156,18 @@ pub fn player_movement(
     let Ok((mut constant_force, mut constant_torque, transform)) = query.single_mut() else {
         return;
     };
-    
+
     // Calculate movement direction from input
     // Rust Concept: Accumulator pattern
     // Reset forces each frame since we are simulating thrusters
     constant_force.0 = Vec2::ZERO;
     constant_torque.0 = 0.0;
-    
+
     // which thrusters are active
     let mut left_thruster_active = false;
     let mut right_thruster_active = false;
     let mut reverse_active = false;
-    
+
     // Rust Concept: if expressions (not statements)
     // left arrow fires right thruster
     if keyboard.pressed(KeyCode::ArrowLeft) || keyboard.pressed(KeyCode::KeyA) {
@@ -180,11 +183,11 @@ pub fn player_movement(
     if keyboard.pressed(KeyCode::ArrowDown) || keyboard.pressed(KeyCode::KeyS) {
         reverse_active = true;
     }
-    
+
     // Apply Physics
 
     let forward = (transform.rotation * Vec3::Y).truncate();
-    
+
     //left thruster
     if left_thruster_active {
         constant_force.0 += forward * physics_config.thruster_force;
@@ -201,9 +204,7 @@ pub fn player_movement(
     if reverse_active {
         constant_force.0 -= forward * physics_config.reverse_thrust_force;
     }
-
 }
-
 
 pub fn update_thruster_audio(
     keyboard: Res<ButtonInput<KeyCode>>,
@@ -214,10 +215,14 @@ pub fn update_thruster_audio(
         return;
     };
     // Check if any thruster key is pressed
-    let is_thrusting = keyboard.pressed(KeyCode::ArrowUp) || keyboard.pressed(KeyCode::KeyW) ||
-                       keyboard.pressed(KeyCode::ArrowDown) || keyboard.pressed(KeyCode::KeyS) ||
-                       keyboard.pressed(KeyCode::ArrowLeft) || keyboard.pressed(KeyCode::KeyA) ||
-                       keyboard.pressed(KeyCode::ArrowRight) || keyboard.pressed(KeyCode::KeyD);
+    let is_thrusting = keyboard.pressed(KeyCode::ArrowUp)
+        || keyboard.pressed(KeyCode::KeyW)
+        || keyboard.pressed(KeyCode::ArrowDown)
+        || keyboard.pressed(KeyCode::KeyS)
+        || keyboard.pressed(KeyCode::ArrowLeft)
+        || keyboard.pressed(KeyCode::KeyA)
+        || keyboard.pressed(KeyCode::ArrowRight)
+        || keyboard.pressed(KeyCode::KeyD);
     if is_thrusting {
         if sink.is_paused() {
             sink.play();
@@ -255,11 +260,10 @@ pub fn player_fire(
             // Use a small circle or existing asset
             // For now, we'll use a small custom size sprite if no asset
             custom_size: Some(Vec2::new(10.0, 20.0)),
-            color: Color::srgb(1.0, 0.8, 0.2), 
+            color: Color::srgb(1.0, 0.8, 0.2),
             ..default()
         },
-        Transform::from_translation(spawn_pos.extend(0.0))
-            .with_rotation(transform.rotation),
+        Transform::from_translation(spawn_pos.extend(0.0)).with_rotation(transform.rotation),
         Projectile,
         Lifetime::new(config.projectile_lifetime),
         // Physics for collision detection
@@ -270,21 +274,19 @@ pub fn player_fire(
 }
 
 /// Keep player within screen bounds
-/// 
+///
 /// Rust Concept: Mutable queries with bounds checking
-pub fn constrain_player_position(
-    mut query: Query<&mut Transform, With<Player>>,
-) {
+pub fn constrain_player_position(mut query: Query<&mut Transform, With<Player>>) {
     let Ok(mut transform) = query.single_mut() else {
         return;
     };
-    
+
     // Screen bounds (800x600 window)
     const MIN_X: f32 = -385.0;
     const MAX_X: f32 = 385.0;
     const MIN_Y: f32 = -285.0;
     const MAX_Y: f32 = 285.0;
-    
+
     // Rust Concept: Clamp method for bounds
     // This is more elegant than nested if statements
     transform.translation.x = transform.translation.x.clamp(MIN_X, MAX_X);
@@ -292,7 +294,7 @@ pub fn constrain_player_position(
 }
 
 /// Display player health (simple text for now)
-/// 
+///
 /// Rust Concept: One-shot systems for UI setup
 pub fn setup_health_display(mut commands: Commands) {
     commands.spawn((
@@ -317,13 +319,13 @@ pub fn setup_health_display(mut commands: Commands) {
 pub(crate) struct HealthDisplay;
 
 /// Update health display
-/// 
+///
 /// Rust Concept: Optional query results
 /// Using Option<> for queries that might not have results
 pub fn update_health_display(
     player_query: Query<&Health, With<Player>>,
     mut text_query: Query<&mut Text, With<HealthDisplay>>,
-    game_state: Res<GameState>,
+    game_data: Res<GameData>,
 ) {
     let Ok(mut text) = text_query.single_mut() else {
         return;
@@ -332,7 +334,7 @@ pub fn update_health_display(
     if let Ok(health) = player_query.single() {
         // Player is alive, show current health
         *text = Text::new(format!("Health: {:.0}", health.current()));
-    } else if game_state.is_game_over {
+    } else if game_data.is_game_over {
         // Player is dead (despawned), show 0
         *text = Text::new("Health: 0");
     }
@@ -375,7 +377,7 @@ pub fn update_thruster_visuals(
             (Thruster::Left, ThrusterType::Reverse) => left_reverse_active,
             (Thruster::Right, ThrusterType::Reverse) => right_reverse_active,
         };
-        
+
         *visibility = if active {
             Visibility::Visible
         } else {

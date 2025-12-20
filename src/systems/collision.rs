@@ -1,18 +1,18 @@
-use bevy::prelude::*;
-use avian2d::prelude::*;
-use bevy_hanabi::prelude::*;
 use crate::components::*;
 use crate::resources::*;
 use crate::systems::asteroid::spawn_asteroid_entity;
+use avian2d::prelude::*;
+use bevy::prelude::*;
+use bevy_hanabi::prelude::*;
 
 /// Handle collisions between player and asteroids
-/// 
+///
 /// Rust Concept: Event-driven systems
 /// Avian emits collision events that we can listen to
 pub fn handle_collisions(
     mut commands: Commands,
     mut collision_events: MessageReader<CollisionStart>,
-    mut game_state: ResMut<GameState>,
+    mut game_state: ResMut<GameData>,
     mut player_query: Query<(Entity, &mut Health), With<Player>>,
     asteroid_query: Query<(Entity, &AsteroidSize), With<Asteroid>>,
 ) {
@@ -23,33 +23,32 @@ pub fn handle_collisions(
         let entity2 = event.body2.unwrap();
         // Try to identify which entity is the player and which is the asteroid
         // Rust Concept: Pattern matching with if let
-        let collision_data = 
-            if let Ok((player_ent, _)) = player_query.get(entity1) {
-                if let Ok((asteroid_ent, size)) = asteroid_query.get(entity2) {
-                    Some((player_ent, asteroid_ent, *size))
-                } else {
-                    None
-                }
-            } else if let Ok((player_ent, _)) = player_query.get(entity2) {
-                if let Ok((asteroid_ent, size)) = asteroid_query.get(entity1) {
-                    Some((player_ent, asteroid_ent, *size))
-                } else {
-                    None
-                }
+        let collision_data = if let Ok((player_ent, _)) = player_query.get(entity1) {
+            if let Ok((asteroid_ent, size)) = asteroid_query.get(entity2) {
+                Some((player_ent, asteroid_ent, *size))
             } else {
                 None
-            };
-        
+            }
+        } else if let Ok((player_ent, _)) = player_query.get(entity2) {
+            if let Ok((asteroid_ent, size)) = asteroid_query.get(entity1) {
+                Some((player_ent, asteroid_ent, *size))
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
         // Rust Concept: Using if let Some pattern
         if let Some((player_ent, asteroid_ent, size)) = collision_data {
             // Get mutable access to health
             if let Ok((_, mut health)) = player_query.get_mut(player_ent) {
                 // Apply damage to player
                 health.damage(size.damage());
-                
+
                 // Despawn the asteroid
                 commands.entity(asteroid_ent).despawn();
-                
+
                 // Check if player is dead
                 if health.is_dead() {
                     commands.entity(player_ent).despawn();
@@ -63,34 +62,26 @@ pub fn handle_collisions(
 // Let me rewrite this more clearly - the above is too complex for a tutorial!
 
 /// Handle collisions between player and asteroids (simplified version)
-/// 
+///
 /// Rust Concept: Breaking complex logic into helper functions
 pub fn handle_collisions_simple(
     mut commands: Commands,
     mut collision_events: MessageReader<CollisionStart>,
-    mut game_state: ResMut<GameState>,
+    mut game_state: ResMut<GameData>,
     mut player_query: Query<(Entity, &mut Health), With<Player>>,
     asteroid_query: Query<(Entity, &AsteroidSize), With<Asteroid>>,
 ) {
     for event in collision_events.read() {
         let entity1 = event.body1.unwrap();
         let entity2 = event.body2.unwrap();
-        
+
         // Check Player-Asteroid
-        if let Some(collision) = check_player_asteroid_collision(
-            entity1,
-            entity2,
-            &player_query,
-            &asteroid_query,
-        ) {
-            handle_collision(
-                collision,
-                &mut commands,
-                &mut player_query,
-                &mut game_state,
-            );
+        if let Some(collision) =
+            check_player_asteroid_collision(entity1, entity2, &player_query, &asteroid_query)
+        {
+            handle_collision(collision, &mut commands, &mut player_query, &mut game_state);
         }
-        
+
         // Check Projectile-Asteroid
         // We can just despawn both for now
         // Rust Concept: Querying for specific components to identify collision type
@@ -104,7 +95,7 @@ pub fn handle_collisions_simple(
 pub fn handle_projectile_collisions(
     mut commands: Commands,
     mut collision_events: MessageReader<CollisionStart>,
-    mut game_state: ResMut<GameState>,
+    mut game_state: ResMut<GameData>,
     projectile_query: Query<(Entity, &LinearVelocity, &Transform), With<Projectile>>,
     asteroid_query: Query<(Entity, &AsteroidSize, &Transform, &LinearVelocity), With<Asteroid>>,
     mut effects: ResMut<Assets<EffectAsset>>,
@@ -114,7 +105,7 @@ pub fn handle_projectile_collisions(
     for event in collision_events.read() {
         let entity1 = event.body1.unwrap();
         let entity2 = event.body2.unwrap();
-        
+
         let projectile_entity;
         let projectile_velocity;
         let projectile_position;
@@ -122,7 +113,7 @@ pub fn handle_projectile_collisions(
         let asteroid_size;
         let asteroid_position;
         let asteroid_velocity;
-        
+
         if let Ok((proj_ent, proj_vel, proj_trans)) = projectile_query.get(entity1) {
             projectile_entity = proj_ent;
             projectile_velocity = proj_vel.0;
@@ -154,7 +145,7 @@ pub fn handle_projectile_collisions(
         // Collision confirmed
         commands.entity(projectile_entity).despawn();
         commands.entity(asteroid_entity).despawn();
-        
+
         // Add score based on asteroid size
         let score_value = match asteroid_size {
             AsteroidSize::Small => 100,
@@ -162,7 +153,7 @@ pub fn handle_projectile_collisions(
             AsteroidSize::Large => 20,
         };
         game_state.score += score_value;
-        
+
         // Spawn explosion particle effect
         spawn_explosion(&mut commands, &mut effects, asteroid_position);
 
@@ -183,15 +174,20 @@ pub fn handle_projectile_collisions(
             let impact_dir = if projectile_velocity.length_squared() > 1.0 {
                 projectile_velocity.normalize()
             } else {
-                (asteroid_position - projectile_position).truncate().normalize_or_zero()
+                (asteroid_position - projectile_position)
+                    .truncate()
+                    .normalize_or_zero()
             };
 
             // If projectile is moving (vx, vy), perpendicular is (-vy, vx)
             let split_dir = Vec2::new(-impact_dir.y, impact_dir.x);
             let split_speed = 100.0; // Adjust as needed
-            
-            info!("Splitting asteroid: ProjVel={:?}, ImpactDir={:?}, SplitDir={:?}", projectile_velocity, impact_dir, split_dir);
-            
+
+            info!(
+                "Splitting asteroid: ProjVel={:?}, ImpactDir={:?}, SplitDir={:?}",
+                projectile_velocity, impact_dir, split_dir
+            );
+
             // One piece goes "up" (relative to impact), one goes "down"
             let vel1 = base_velocity + (split_dir * split_speed);
             let vel2 = base_velocity - (split_dir * split_speed);
@@ -205,11 +201,25 @@ pub fn handle_projectile_collisions(
 
             // 4. Spawn Children
             // Note: You'll need to pass meshes/materials resources to this system
-            spawn_asteroid_entity(&mut commands, &mut meshes, &mut materials, asteroid_position + offset.extend(0.0), vel1, size1);
-            spawn_asteroid_entity(&mut commands, &mut meshes, &mut materials, asteroid_position - offset.extend(0.0), vel2, size2);
+            spawn_asteroid_entity(
+                &mut commands,
+                &mut meshes,
+                &mut materials,
+                asteroid_position + offset.extend(0.0),
+                vel1,
+                size1,
+            );
+            spawn_asteroid_entity(
+                &mut commands,
+                &mut meshes,
+                &mut materials,
+                asteroid_position - offset.extend(0.0),
+                vel2,
+                size2,
+            );
         }
     }
-}   
+}
 
 /// Spawn an explosion particle effect at the given position
 fn spawn_explosion(
@@ -218,35 +228,35 @@ fn spawn_explosion(
     position: Vec3,
 ) {
     use bevy_hanabi::prelude::*;
-    
+
     // Create color gradient for explosion
     let mut gradient = Gradient::new();
     gradient.add_key(0.0, Vec4::new(1.0, 0.8, 0.2, 1.0)); // Bright yellow
     gradient.add_key(0.3, Vec4::new(1.0, 0.4, 0.1, 1.0)); // Orange
     gradient.add_key(1.0, Vec4::new(0.3, 0.1, 0.0, 0.0)); // Dark red fade
-    
+
     // Create module for expressions
     let mut module = Module::default();
-    
+
     // Spawn particles in a sphere surface
     let init_pos = SetPositionSphereModifier {
         center: module.lit(Vec3::ZERO),
         radius: module.lit(5.0),
         dimension: ShapeDimension::Surface,
     };
-    
+
     // Particles shoot outward
     let init_vel = SetVelocitySphereModifier {
         center: module.lit(Vec3::ZERO),
         speed: module.lit(100.0),
     };
-    
+
     let lifetime = module.lit(0.6);
     let init_lifetime = SetAttributeModifier::new(Attribute::LIFETIME, lifetime);
-    
+
     // Fast spawn rate for burst effect
     let spawner = SpawnerSettings::rate(200.0.into());
-    
+
     let effect = EffectAsset::new(32768, spawner, module)
         .with_name("explosion")
         .init(init_pos)
@@ -261,9 +271,9 @@ fn spawn_explosion(
             gradient: Gradient::constant(Vec3::new(4.0, 4.0, 1.0)),
             screen_space_size: false,
         });
-    
+
     let effect_handle = effects.add(effect);
-    
+
     // Spawn the effect entity - will spawn particles for 0.3s then despawn
     commands.spawn((
         Name::new("Explosion"),
@@ -275,7 +285,7 @@ fn spawn_explosion(
 }
 
 /// Helper struct to represent a player-asteroid collision
-/// 
+///
 /// Rust Concept: Custom types for clarity
 struct PlayerAsteroidCollision {
     player_entity: Entity,
@@ -284,7 +294,7 @@ struct PlayerAsteroidCollision {
 }
 
 /// Check if two entities represent a player-asteroid collision
-/// 
+///
 /// Rust Concept: Returning Option for "maybe found" results
 fn check_player_asteroid_collision(
     entity1: Entity,
@@ -302,7 +312,7 @@ fn check_player_asteroid_collision(
             });
         }
     }
-    
+
     // Try entity2 as player, entity1 as asteroid
     if player_query.get(entity2).is_ok() {
         if let Ok((asteroid_ent, size)) = asteroid_query.get(entity1) {
@@ -313,32 +323,30 @@ fn check_player_asteroid_collision(
             });
         }
     }
-    
+
     None
 }
 
 /// Handle a confirmed player-asteroid collision
-/// 
+///
 /// Rust Concept: Separation of concerns
 /// This function only handles the collision response
 fn handle_collision(
     collision: PlayerAsteroidCollision,
     commands: &mut Commands,
     player_query: &mut Query<(Entity, &mut Health), With<Player>>,
-    game_state: &mut ResMut<GameState>,
+    game_state: &mut ResMut<GameData>,
 ) {
     // Get player health (we know it exists because we just checked)
     // Rust Concept: unwrap() when we're certain it won't panic
-    let (player_entity, mut health) = player_query
-        .get_mut(collision.player_entity)
-        .unwrap();
-    
+    let (player_entity, mut health) = player_query.get_mut(collision.player_entity).unwrap();
+
     // Apply damage
     health.damage(collision.damage);
-    
+
     // Remove asteroid
     //commands.entity(collision.asteroid_entity).despawn();
-    
+
     // Check for game over
     if health.is_dead() {
         commands.entity(player_entity).despawn();
@@ -347,19 +355,19 @@ fn handle_collision(
 }
 
 /// Show game over screen
-/// 
+///
 /// Rust Concept: State-dependent systems
 /// This only runs when certain conditions are met
 pub fn show_game_over(
     mut commands: Commands,
-    game_state: Res<GameState>,
+    game_state: Res<GameData>,
     query: Query<Entity, With<GameOverText>>,
 ) {
     // Only show if game is over and text doesn't exist
     if !game_state.is_game_over || !query.is_empty() {
         return;
     }
-    
+
     commands.spawn((
         Text::new("GAME OVER\nPress R to Restart"),
         TextFont {
@@ -383,7 +391,7 @@ pub(crate) struct GameOverText;
 /// Handle restart input
 pub fn handle_restart(
     keyboard: Res<ButtonInput<KeyCode>>,
-    mut game_state: ResMut<GameState>,
+    mut game_state: ResMut<GameData>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     physics_config: Res<PhysicsConfig>,
@@ -394,23 +402,23 @@ pub fn handle_restart(
     if !game_state.is_game_over {
         return;
     }
-    
+
     if keyboard.just_pressed(KeyCode::KeyR) {
         // Reset game state
         game_state.is_game_over = false;
         game_state.score = 0;
-        
+
         // Remove game over text
         for entity in &game_over_query {
             commands.entity(entity).despawn();
         }
-        
+
         // Clear all asteroids
         // Rust Concept: Batch operations with for loops
         for entity in &asteroid_query {
             commands.entity(entity).despawn();
         }
-        
+
         // Respawn player
         crate::systems::player::spawn_player(commands, asset_server, physics_config, effects);
     }
