@@ -52,6 +52,7 @@ fn main() {
         // Rust Concept: Resource insertion for configuration
         .insert_resource(Gravity(Vec2::ZERO)) // No gravity in space!
         // Initialize our game resources
+        .init_state::<AppState>()
         .init_resource::<GameData>()
         .init_resource::<SpawnTimer>()
         .init_resource::<AsteroidSpawnConfig>()
@@ -59,12 +60,18 @@ fn main() {
         .init_resource::<DifficultyConfig>()
         // Startup systems (run once at launch)
         // Rust Concept: System scheduling with tuples
+        .add_systems(OnEnter(AppState::Menu), (setup_menu,))
+        .add_systems(
+            Update,
+            (handle_menu_input,).run_if(in_state(AppState::Menu)),
+        )
+        .add_systems(OnEnter(AppState::Playing), (spawn_player,))
+        // .add_systems(OnEnter(AppState::GameOver))
         .add_systems(
             Startup,
             (
                 setup_camera,
                 spawn_background,
-                spawn_player,
                 setup_health_display,
                 setup_score_display,
                 // WASM-specific: Add browser logging setup
@@ -80,7 +87,6 @@ fn main() {
                 // Input handling
                 player_movement,
                 player_fire,
-                handle_restart,
                 // Spawning and cleanup
                 spawn_asteroids,
                 cleanup_offscreen,
@@ -92,12 +98,12 @@ fn main() {
                 // UI updates
                 update_health_display,
                 update_score_display,
-                show_game_over,
                 update_thruster_visuals,
                 update_thruster_audio,
                 // Rendering (debug visualization)
                 //draw_asteroid_shapes,
-            ),
+            )
+                .run_if(in_state(AppState::Playing)),
         )
         // Rust Concept: System ordering
         // We can specify that certain systems run before others
