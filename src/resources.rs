@@ -6,7 +6,6 @@ pub enum AppState {
     #[default]
     Menu, // Start Screen
     Playing,  // Active Gameplay - will have levels and such
-    Paused,   // Non-active Gameplay, halt cycles?
     GameOver, // Game Over Screen + High Scores }
 }
 
@@ -30,15 +29,11 @@ struct HighScores {
 #[derive(Resource)]
 pub struct GameData {
     pub score: u32,
-    pub is_game_over: bool,
 }
 
 impl Default for GameData {
     fn default() -> Self {
-        Self {
-            score: 0,
-            is_game_over: false,
-        }
+        Self { score: 0 }
     }
 }
 

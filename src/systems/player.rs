@@ -325,7 +325,7 @@ pub(crate) struct HealthDisplay;
 pub fn update_health_display(
     player_query: Query<&Health, With<Player>>,
     mut text_query: Query<&mut Text, With<HealthDisplay>>,
-    game_data: Res<GameData>,
+    app_state: Res<State<AppState>>,
 ) {
     let Ok(mut text) = text_query.single_mut() else {
         return;
@@ -334,7 +334,7 @@ pub fn update_health_display(
     if let Ok(health) = player_query.single() {
         // Player is alive, show current health
         *text = Text::new(format!("Health: {:.0}", health.current()));
-    } else if game_data.is_game_over {
+    } else if *app_state.get() != AppState::Playing {
         // Player is dead (despawned), show 0
         *text = Text::new("Health: 0");
     }

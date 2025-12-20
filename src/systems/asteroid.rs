@@ -16,11 +16,11 @@ pub fn spawn_asteroids(
     difficulty: Res<DifficultyConfig>,
     config: Res<AsteroidSpawnConfig>,
     time: Res<Time>,
-    game_state: Res<GameData>,
+    app_state: Res<State<AppState>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    if game_state.is_game_over {
+    if *app_state.get() != AppState::Playing {
         return;
     }
 

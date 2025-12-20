@@ -108,6 +108,11 @@ fn main() {
         // Rust Concept: System ordering
         // We can specify that certain systems run before others
         .add_systems(Update, constrain_player_position.after(player_movement))
+        .add_systems(OnEnter(AppState::GameOver), setup_game_over)
+        .add_systems(
+            Update,
+            (handle_game_over_input).run_if(in_state(AppState::GameOver)),
+        )
         .run();
 }
 

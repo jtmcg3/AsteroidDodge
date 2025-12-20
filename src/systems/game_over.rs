@@ -1,8 +1,8 @@
 use crate::resources::AppState;
 use bevy::prelude::*;
 
-// This spawns the Menu UI
-pub fn setup_menu(mut commands: Commands) {
+// This spawns the GameOver UI
+pub fn setup_game_over(mut commands: Commands) {
     // spawn a root node that covers the screen, flexbox container
     commands
         .spawn((
@@ -14,29 +14,31 @@ pub fn setup_menu(mut commands: Commands) {
                 flex_direction: FlexDirection::Column,
                 ..default()
             },
-            DespawnOnExit(AppState::Menu),
+            DespawnOnExit(AppState::GameOver),
         ))
         .with_children(|parent| {
             parent.spawn((
-                Text::new("Begin Your Game!\nPress <Enter>"),
+                Text::new("Have you tried...\nbeing better?\nPress <Enter> ya filthy animal"),
                 TextFont {
-                    font_size: 48.0,
+                    font_size: 24.0,
                     ..default()
                 },
                 TextColor(Color::WHITE),
             ));
         });
     // Add text children for title and instructions
-    // Make sure to include StateScoped(AppState:Menu) in root
+    // Make sure to include StateScoped(AppState:GameOver) in root
 }
 
-// menu input, runs every frame while in menu state
-pub fn handle_menu_input(
+// game_over
+// input, runs every frame while in game_over
+// state
+pub fn handle_game_over_input(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut next_state: ResMut<NextState<AppState>>,
 ) {
-    // Check for Enter Key, transition to playing
+    // Check for Enter Key, Transition to Menu
     if keyboard.just_pressed(KeyCode::Enter) {
-        next_state.set(AppState::Playing);
+        next_state.set(AppState::Menu);
     }
 }
