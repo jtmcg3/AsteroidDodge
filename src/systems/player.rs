@@ -226,10 +226,8 @@ pub fn update_thruster_audio(
         if sink.is_paused() {
             sink.play();
         }
-    } else {
-        if !sink.is_paused() {
-            sink.pause();
-        }
+    } else if !sink.is_paused() {
+        sink.pause();
     }
 }
 

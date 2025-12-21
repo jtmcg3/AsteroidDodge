@@ -36,6 +36,7 @@ pub fn handle_collisions_simple(
 }
 
 /// Handle collisions between projectiles and asteroids
+#[allow(clippy::too_many_arguments)]
 pub fn handle_projectile_collisions(
     mut commands: Commands,
     mut collision_events: MessageReader<CollisionStart>,
@@ -246,24 +247,22 @@ fn check_player_asteroid_collision(
     asteroid_query: &Query<(Entity, &AsteroidSize), With<Asteroid>>,
 ) -> Option<PlayerAsteroidCollision> {
     // Try entity1 as player, entity2 as asteroid
-    if player_query.get(entity1).is_ok() {
-        if let Ok((_, size)) = asteroid_query.get(entity2) {
+    if player_query.get(entity1).is_ok()
+        && let Ok((_, size)) = asteroid_query.get(entity2) {
             return Some(PlayerAsteroidCollision {
                 player_entity: entity1,
                 damage: size.damage(),
             });
         }
-    }
 
     // Try entity2 as player, entity1 as asteroid
-    if player_query.get(entity2).is_ok() {
-        if let Ok((_, size)) = asteroid_query.get(entity1) {
+    if player_query.get(entity2).is_ok()
+        && let Ok((_, size)) = asteroid_query.get(entity1) {
             return Some(PlayerAsteroidCollision {
                 player_entity: entity2,
                 damage: size.damage(),
             });
         }
-    }
 
     None
 }

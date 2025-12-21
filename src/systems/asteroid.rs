@@ -140,6 +140,7 @@ pub fn spawn_asteroid_entity(
 /// Clean up asteroids that have left the screen
 ///
 /// Rust Concept: Filtering entities with With<> query filter
+#[allow(clippy::type_complexity)]
 pub fn cleanup_offscreen(
     mut commands: Commands,
     query: Query<(Entity, &Transform), (With<Asteroid>, With<Cleanup>)>,
