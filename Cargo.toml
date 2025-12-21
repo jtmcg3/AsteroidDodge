@@ -3,6 +3,9 @@ name = "asteroid_dodge"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+debug = []
+
 [dependencies]
 avian2d = "0.4.1"
 bevy = {version = "0.17.2", features = ["jpeg", "png", "webgl2", "bevy_winit"]}

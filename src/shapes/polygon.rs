@@ -12,7 +12,7 @@ generator for irregular polygons
 1. place vertices in a circle
 2. Randomly varying the radius for each vertex
 3. Adding a slight angular variation
-*/ 
+*/
 pub struct IrregularPolygonGenerator {
     pub vertex_count: usize,
     pub base_radius: f32,
@@ -26,7 +26,7 @@ impl IrregularPolygonGenerator {
             vertex_count,
             base_radius,
             radius_variation: 0.3, // 30% variation in radius
-            angle_variation: 0.2, //small angular jitter
+            angle_variation: 0.2,  //small angular jitter
         }
     }
 
@@ -40,16 +40,12 @@ impl IrregularPolygonGenerator {
         let angle = base_angle + angle_offset;
 
         // vary the radius randomly
-        let radius_factor = rng.random_range(
-            1.0 - self.radius_variation..1.0 + self.radius_variation
-        );
+        let radius_factor =
+            rng.random_range(1.0 - self.radius_variation..1.0 + self.radius_variation);
         let radius = self.base_radius * radius_factor;
 
         // Direct return without return keyword
-        Vec2::new(
-            angle.cos() * radius,
-            angle.sin() * radius,
-        )
+        Vec2::new(angle.cos() * radius, angle.sin() * radius)
     }
 }
 
@@ -64,17 +60,17 @@ impl ShapeGenerator for IrregularPolygonGenerator {
 }
 
 /// Ensure a polygon's vertices are in counter-clockwise order
-/// 
+///
 /// Rust Concept: In-place mutation with &mut
 /// This modifies the vector directly rather than creating a new one
-pub fn ensure_ccw(vertices: &mut Vec<Vec2>) {
+pub fn ensure_ccw(vertices: &mut [Vec2]) {
     if !is_ccw(vertices) {
         vertices.reverse();
     }
 }
 
 /// Check if vertices are in counter-clockwise order using the shoelace formula
-/// 
+///
 /// Rust Concept: Window iteration
 /// windows(2) creates an iterator over overlapping pairs
 fn is_ccw(vertices: &[Vec2]) -> bool {
@@ -90,17 +86,17 @@ fn is_ccw(vertices: &[Vec2]) -> bool {
             }
         })
         .sum();
-    
+
     // Also add the wrap-around edge
     let last = vertices.last().unwrap();
     let first = vertices.first().unwrap();
     let final_area = area + (first.x - last.x) * (first.y + last.y);
-    
-    final_area < 0.0  // Negative area means CCW
+
+    final_area < 0.0 // Negative area means CCW
 }
 
 /// Create vertices for a regular polygon (for testing/simple cases)
-/// 
+///
 /// Rust Concept: Generic functions with trait bounds
 /// This works with any number that can be converted to/from f32
 pub fn regular_polygon(num_vertices: usize, radius: f32) -> Vec<Vec2> {
@@ -113,16 +109,16 @@ pub fn regular_polygon(num_vertices: usize, radius: f32) -> Vec<Vec2> {
 }
 
 /// Simplify a polygon by removing vertices that are too close together
-/// 
+///
 /// Rust Concept: Filtering with retain
 /// This is more efficient than creating a new Vec
 pub fn simplify_polygon(vertices: &mut Vec<Vec2>, min_distance: f32) {
     if vertices.len() < 3 {
         return;
     }
-    
+
     let min_dist_squared = min_distance * min_distance;
-    
+
     // Rust Concept: retain with closure
     // Keep only vertices that are far enough from the previous one
     let mut prev = vertices[0];
@@ -134,7 +130,7 @@ pub fn simplify_polygon(vertices: &mut Vec<Vec2>, min_distance: f32) {
         }
         keep
     });
-    
+
     // Ensure we still have enough vertices for a valid polygon
     if vertices.len() < 3 {
         *vertices = regular_polygon(6, 20.0); // Fallback to regular hexagon
@@ -144,7 +140,7 @@ pub fn simplify_polygon(vertices: &mut Vec<Vec2>, min_distance: f32) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     /// Rust Concept: Unit testing
     /// Testing is built into Rust - no external framework needed
     #[test]
@@ -152,7 +148,7 @@ mod tests {
         let vertices = regular_polygon(6, 10.0);
         assert_eq!(vertices.len(), 6);
     }
-    
+
     #[test]
     fn test_ccw_detection() {
         // Square in CCW order
@@ -163,7 +159,7 @@ mod tests {
             Vec2::new(0.0, 1.0),
         ];
         assert!(is_ccw(&ccw_square));
-        
+
         // Square in CW order
         let cw_square = vec![
             Vec2::new(0.0, 0.0),
@@ -173,7 +169,7 @@ mod tests {
         ];
         assert!(!is_ccw(&cw_square));
     }
-    
+
     #[test]
     fn test_ensure_ccw() {
         let mut vertices = vec![
@@ -182,7 +178,7 @@ mod tests {
             Vec2::new(1.0, 1.0),
             Vec2::new(1.0, 0.0),
         ];
-        
+
         ensure_ccw(&mut vertices);
         assert!(is_ccw(&vertices));
     }

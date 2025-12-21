@@ -247,7 +247,7 @@ fn check_player_asteroid_collision(
 ) -> Option<PlayerAsteroidCollision> {
     // Try entity1 as player, entity2 as asteroid
     if player_query.get(entity1).is_ok() {
-        if let Ok((asteroid_ent, size)) = asteroid_query.get(entity2) {
+        if let Ok((_, size)) = asteroid_query.get(entity2) {
             return Some(PlayerAsteroidCollision {
                 player_entity: entity1,
                 damage: size.damage(),
@@ -257,7 +257,7 @@ fn check_player_asteroid_collision(
 
     // Try entity2 as player, entity1 as asteroid
     if player_query.get(entity2).is_ok() {
-        if let Ok((asteroid_ent, size)) = asteroid_query.get(entity1) {
+        if let Ok((_, size)) = asteroid_query.get(entity1) {
             return Some(PlayerAsteroidCollision {
                 player_entity: entity2,
                 damage: size.damage(),
@@ -276,7 +276,7 @@ fn handle_collision(
     collision: PlayerAsteroidCollision,
     commands: &mut Commands,
     player_query: &mut Query<(Entity, &mut Health), With<Player>>,
-    mut next_state: &mut ResMut<NextState<AppState>>,
+    next_state: &mut ResMut<NextState<AppState>>,
 ) {
     // Get player health (we know it exists because we just checked)
     // Rust Concept: unwrap() when we're certain it won't panic

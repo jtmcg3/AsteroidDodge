@@ -7,35 +7,15 @@ pub struct Player;
 #[derive(Component)]
 pub struct Asteroid;
 
-// Velocity Component
-#[derive(Component, Debug, Clone, Copy)]
-pub struct Velocity {
-    pub value: Vec2,
-}
-
-impl Velocity {
-    pub fn new(x:f32, y:f32) -> Self {
-        Self {value: Vec2::new(x,y) }
-    }
-
-    pub fn magnitude(&self) -> f32 {
-        self.value.length()
-    }
-}
-
 // Health Component
 #[derive(Component)]
 pub struct Health {
     current: f32,
-    max: f32,
 }
 
 impl Health {
     pub fn new(max: f32) -> Self {
-        Self {
-            current: max, 
-            max,
-        }
+        Self { current: max }
     }
 
     pub fn current(&self) -> f32 {
@@ -48,10 +28,6 @@ impl Health {
 
     pub fn is_dead(&self) -> bool {
         self.current <= 0.0
-    }
-
-    pub fn percent(&self) -> f32 {
-        self.current / self.max
     }
 }
 
@@ -103,17 +79,6 @@ impl AsteroidSize {
 // Cleanup yo shit
 #[derive(Component)]
 pub struct Cleanup;
-
-#[derive(Component)]
-pub struct PolygonMesh {
-    pub vertices: Vec<Vec2>,
-}
-
-impl PolygonMesh {
-    pub fn new(vertices: Vec<Vec2>) -> Self {
-        Self { vertices }
-    }
-}
 
 #[derive(Component)]
 pub struct Projectile;

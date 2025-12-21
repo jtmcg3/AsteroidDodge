@@ -9,32 +9,26 @@ pub enum AppState {
     GameOver, // Game Over Screen + High Scores }
 }
 
-#[derive(Resource)]
-struct PlayerSettings {
-    ship_type: ShipType,
-    name: String,
-}
+// #[derive(Resource)]
+// struct PlayerSettings {
+//     ship_type: ShipType,
+//     name: String,
+// }
 
-#[derive(Debug, Default)]
-pub enum ShipType {
-    #[default]
-    SimpleShip,
-}
+// #[derive(Debug, Default)]
+// pub enum ShipType {
+//     #[default]
+//     SimpleShip,
+// }
 
-#[derive(Resource)]
-struct HighScores {
-    scores: Vec<(String, u32)>, // name, score
-}
+// #[derive(Resource)]
+// struct HighScores {
+//     scores: Vec<(String, u32)>, // name, score
+// }
 
-#[derive(Resource)]
+#[derive(Resource, Default)]
 pub struct GameData {
     pub score: u32,
-}
-
-impl Default for GameData {
-    fn default() -> Self {
-        Self { score: 0 }
-    }
 }
 
 // Timer things for spawning things

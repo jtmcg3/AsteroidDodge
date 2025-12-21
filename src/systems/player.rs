@@ -78,7 +78,6 @@ pub fn spawn_player(
             // Game components
             Player,
             Health::new(100.0),
-            Velocity::new(0.0, 0.0),
             // Physics components
             RigidBody::Dynamic,
             Collider::triangle(
@@ -240,7 +239,6 @@ pub fn player_fire(
     keyboard: Res<ButtonInput<KeyCode>>,
     query: Query<&Transform, With<Player>>,
     config: Res<PhysicsConfig>,
-    asset_server: Res<AssetServer>,
 ) {
     if !keyboard.just_pressed(KeyCode::Space) {
         return;

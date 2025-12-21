@@ -10,6 +10,7 @@ use rand::Rng;
 /// Spawn asteroids at intervals with procedurally generated shapes
 ///
 /// Rust Concept: Complex system with multiple resources
+#[allow(clippy::too_many_arguments)]
 pub fn spawn_asteroids(
     mut commands: Commands,
     mut spawn_timer: ResMut<SpawnTimer>,
@@ -123,7 +124,6 @@ pub fn spawn_asteroid_entity(
         // Game components
         Asteroid,
         size,
-        PolygonMesh::new(visual_vertices),
         Cleanup,
         // Physics components
         RigidBody::Dynamic,
@@ -150,34 +150,6 @@ pub fn cleanup_offscreen(
             // Rust Concept: Entity despawning
             // This marks the entity for removal
             commands.entity(entity).despawn();
-        }
-    }
-}
-
-/// System to render asteroid polygons
-///
-/// Rust Concept: Gizmos for debug rendering
-/// This is temporary - in a full game you'd use mesh rendering
-#[cfg(feature = "debug")]
-pub fn draw_asteroid_shapes(
-    mut gizmos: Gizmos,
-    query: Query<(&Transform, &PolygonMesh), With<Asteroid>>,
-) {
-    for (transform, mesh) in &query {
-        let color = Color::srgb(0.8, 0.5, 0.3);
-
-        // Draw lines between vertices
-        // Rust Concept: Enumerate for indices
-        // This gives us both the index and the value
-        for (i, &vertex) in mesh.vertices.iter().enumerate() {
-            let next_vertex = mesh.vertices[(i + 1) % mesh.vertices.len()];
-
-            // Transform vertices to world space
-            // Rust Concept: Transform composition
-            let world_vertex = transform.transform_point(vertex.extend(0.0));
-            let world_next = transform.transform_point(next_vertex.extend(0.0));
-
-            gizmos.line_2d(world_vertex.truncate(), world_next.truncate(), color);
         }
     }
 }
@@ -234,28 +206,4 @@ fn create_polygon_mesh(vertices: &[Vec2]) -> Mesh {
     mesh.insert_indices(Indices::U32(indices));
 
     mesh
-}
-
-/// System to show collision shapes for debugging
-///
-/// Rust Concept: Conditional compilation
-/// We can enable this with a feature flag
-#[cfg(feature = "debug")]
-pub fn draw_colliders(mut gizmos: Gizmos, query: Query<(&Transform, &Collider), With<Asteroid>>) {
-    for (transform, collider) in &query {
-        // Extract polygon vertices from collider
-        // This is a bit advanced - we're pattern matching on the collider type
-        if let Some(polygon) = collider.as_convex_polygon() {
-            let color = Color::srgba(0.0, 1.0, 0.0, 0.3);
-
-            for (i, &vertex) in polygon.vertices().iter().enumerate() {
-                let next_vertex = polygon.vertices()[(i + 1) % polygon.vertices().len()];
-
-                let world_vertex = transform.transform_point(vertex.extend(0.0));
-                let world_next = transform.transform_point(next_vertex.extend(0.0));
-
-                gizmos.line_2d(world_vertex.truncate(), world_next.truncate(), color);
-            }
-        }
-    }
 }
