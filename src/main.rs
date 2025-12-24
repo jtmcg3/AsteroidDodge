@@ -60,6 +60,8 @@ fn main() {
         .init_resource::<DifficultyConfig>()
         // Startup systems (run once at launch)
         // Rust Concept: System scheduling with tuples
+        .add_systems(OnEnter(AppState::Loading), setup_loading)
+        .add_systems(Update, (check_loading).run_if(in_state(AppState::Loading)))
         .add_systems(OnEnter(AppState::Menu), (setup_menu,))
         .add_systems(
             Update,

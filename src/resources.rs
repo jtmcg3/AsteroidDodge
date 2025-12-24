@@ -4,6 +4,7 @@ use bevy::prelude::*;
 #[derive(Debug, States, Clone, PartialEq, Eq, Hash, Default)]
 pub enum AppState {
     #[default]
+    Loading,
     Menu, // Start Screen
     Playing,  // Active Gameplay - will have levels and such
     GameOver, // Game Over Screen + High Scores }
@@ -162,3 +163,27 @@ pub fn update_score_display(
     // Rust Concept: String formatting with format! macro
     *text = Text::new(format!("Score: {:.0}", spawn_timer.elapsed_time));
 }
+
+#[derive(Resource)]
+pub(crate) struct AudioAssets {
+    pub thruster: Handle<AudioSource>,
+    pub explosion: Handle<AudioSource>,
+    pub bonk: Handle<AudioSource>,
+    pub laser: Handle<AudioSource>,
+    pub game_start: Handle<AudioSource>,
+    pub game_over: Handle<AudioSource>,
+    pub menu_boop: Handle<AudioSource>,
+}
+
+impl AudioAssets {
+    pub fn handles(&self) -> [Handle<AudioSource>;7]{
+        [self.thruster.clone(),
+        self.explosion.clone(),
+        self.bonk.clone(),
+        self.laser.clone(),
+        self.game_start.clone(),
+        self.game_over.clone(),
+        self.menu_boop.clone(),]
+    } 
+}
+

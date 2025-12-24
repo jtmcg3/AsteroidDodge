@@ -5,6 +5,7 @@ pub mod asteroid;
 pub mod background;
 pub mod collision;
 pub mod game_over;
+pub mod loading;
 pub mod menu;
 pub mod player;
 pub mod projectile;
@@ -19,4 +20,5 @@ pub use player::*;
 pub use projectile::*;
 
 pub use game_over::*;
+pub use loading::*;
 pub use menu::*;
