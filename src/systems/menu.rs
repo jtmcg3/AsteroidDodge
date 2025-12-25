@@ -1,3 +1,4 @@
+use crate::events::*;
 use crate::resources::AppState;
 use bevy::prelude::*;
 
@@ -34,9 +35,12 @@ pub fn setup_menu(mut commands: Commands) {
 pub fn handle_menu_input(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut next_state: ResMut<NextState<AppState>>,
+    mut message: MessageWriter<PlaySoundEvent>,
 ) {
     // Check for Enter Key, transition to playing
     if keyboard.just_pressed(KeyCode::Enter) {
+        message.write(PlaySoundEvent::MenuBoop); // this will move when i have multiple ships to select
+        message.write(PlaySoundEvent::GameStart); // this belongs here
         next_state.set(AppState::Playing);
     }
 }

@@ -12,10 +12,12 @@ use bevy::prelude::*;
 use bevy_hanabi::prelude::*;
 
 mod components;
+mod events;
 mod resources;
 mod shapes;
 mod systems;
 
+use events::*;
 use resources::*;
 use systems::*;
 
@@ -62,6 +64,8 @@ fn main() {
         // Rust Concept: System scheduling with tuples
         .add_systems(OnEnter(AppState::Loading), setup_loading)
         .add_systems(Update, (check_loading).run_if(in_state(AppState::Loading)))
+        .add_message::<PlaySoundEvent>()
+        .add_systems(Update, (handle_audio_events,))
         .add_systems(OnEnter(AppState::Menu), (setup_menu,))
         .add_systems(
             Update,

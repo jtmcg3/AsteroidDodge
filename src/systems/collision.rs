@@ -1,4 +1,5 @@
 use crate::components::*;
+use crate::events::PlaySoundEvent;
 use crate::resources::*;
 use crate::systems::asteroid::spawn_asteroid_entity;
 use avian2d::prelude::*;
@@ -13,6 +14,7 @@ pub fn handle_collisions_simple(
     mut collision_events: MessageReader<CollisionStart>,
     mut player_query: Query<(Entity, &mut Health), With<Player>>,
     asteroid_query: Query<(Entity, &AsteroidSize), With<Asteroid>>,
+    mut message: MessageWriter<PlaySoundEvent>,
     mut next_state: ResMut<NextState<AppState>>,
 ) {
     for event in collision_events.read() {
@@ -23,7 +25,7 @@ pub fn handle_collisions_simple(
         if let Some(collision) =
             check_player_asteroid_collision(entity1, entity2, &player_query, &asteroid_query)
         {
-            handle_collision(collision, &mut commands, &mut player_query, &mut next_state);
+            handle_collision(collision, &mut commands, &mut player_query, &mut message , &mut next_state);
         }
 
         // Check Projectile-Asteroid
@@ -46,6 +48,7 @@ pub fn handle_projectile_collisions(
     mut effects: ResMut<Assets<EffectAsset>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    mut message: MessageWriter<PlaySoundEvent>,
 ) {
     for event in collision_events.read() {
         let entity1 = event.body1.unwrap();
@@ -88,6 +91,7 @@ pub fn handle_projectile_collisions(
         }
 
         // Collision confirmed
+        message.write(PlaySoundEvent::Explosion);
         commands.entity(projectile_entity).despawn();
         commands.entity(asteroid_entity).despawn();
 
@@ -275,6 +279,7 @@ fn handle_collision(
     collision: PlayerAsteroidCollision,
     commands: &mut Commands,
     player_query: &mut Query<(Entity, &mut Health), With<Player>>,
+    message: &mut MessageWriter<PlaySoundEvent>,
     next_state: &mut ResMut<NextState<AppState>>,
 ) {
     // Get player health (we know it exists because we just checked)
@@ -290,6 +295,9 @@ fn handle_collision(
     // Check for game over
     if health.is_dead() {
         commands.entity(player_entity).despawn();
+        message.write(PlaySoundEvent::GameOver);
         next_state.set(AppState::GameOver);
+    } else {
+        message.write(PlaySoundEvent::Bonk);
     }
 }

@@ -1,4 +1,5 @@
 use crate::components::*;
+use crate::events::*;
 use crate::resources::*;
 use avian2d::prelude::*;
 use bevy::prelude::*;
@@ -237,6 +238,7 @@ pub fn player_fire(
     keyboard: Res<ButtonInput<KeyCode>>,
     query: Query<&Transform, With<Player>>,
     config: Res<PhysicsConfig>,
+    mut message: MessageWriter<PlaySoundEvent>,
 ) {
     if !keyboard.just_pressed(KeyCode::Space) {
         return;
@@ -267,6 +269,7 @@ pub fn player_fire(
         Collider::rectangle(10.0, 20.0),
         Sensor, // Sensor so it doesn't physically push things
     ));
+    message.write(PlaySoundEvent::Laser);
 }
 
 /// Keep player within screen bounds

@@ -1,3 +1,4 @@
+use crate::events::*;
 use crate::resources::AppState;
 use bevy::prelude::*;
 
@@ -36,9 +37,11 @@ pub fn setup_game_over(mut commands: Commands) {
 pub fn handle_game_over_input(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut next_state: ResMut<NextState<AppState>>,
+    mut message: MessageWriter<PlaySoundEvent>,
 ) {
     // Check for Enter Key, Transition to Menu
     if keyboard.just_pressed(KeyCode::Enter) {
+        message.write(PlaySoundEvent::MenuBoop); // this will also play when entering name
         next_state.set(AppState::Menu);
     }
 }
