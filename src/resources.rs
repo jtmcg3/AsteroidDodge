@@ -5,7 +5,7 @@ use bevy::prelude::*;
 pub enum AppState {
     #[default]
     Loading,
-    Menu, // Start Screen
+    Menu,     // Start Screen
     Playing,  // Active Gameplay - will have levels and such
     GameOver, // Game Over Screen + High Scores }
 }
@@ -153,7 +153,7 @@ pub(crate) struct ScoreDisplay;
 /// Rust Concept: Optional query results
 /// Using Option<> for queries that might not have results
 pub fn update_score_display(
-    spawn_timer: Res<SpawnTimer>,
+    game_data: Res<GameData>,
     mut text_query: Query<&mut Text, With<ScoreDisplay>>,
 ) {
     let Ok(mut text) = text_query.single_mut() else {
@@ -161,7 +161,7 @@ pub fn update_score_display(
     };
 
     // Rust Concept: String formatting with format! macro
-    *text = Text::new(format!("Score: {:.0}", spawn_timer.elapsed_time));
+    *text = Text::new(format!("Score: {:.0}", game_data.score));
 }
 
 #[derive(Resource)]
@@ -176,14 +176,15 @@ pub(crate) struct AudioAssets {
 }
 
 impl AudioAssets {
-    pub fn handles(&self) -> [Handle<AudioSource>;7]{
-        [self.thruster.clone(),
-        self.explosion.clone(),
-        self.bonk.clone(),
-        self.laser.clone(),
-        self.game_start.clone(),
-        self.game_over.clone(),
-        self.menu_boop.clone(),]
-    } 
+    pub fn handles(&self) -> [Handle<AudioSource>; 7] {
+        [
+            self.thruster.clone(),
+            self.explosion.clone(),
+            self.bonk.clone(),
+            self.laser.clone(),
+            self.game_start.clone(),
+            self.game_over.clone(),
+            self.menu_boop.clone(),
+        ]
+    }
 }
-

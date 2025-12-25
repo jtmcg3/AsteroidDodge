@@ -1,5 +1,5 @@
 use crate::events::*;
-use crate::resources::AppState;
+use crate::resources::{AppState, GameData};
 use bevy::prelude::*;
 
 // This spawns the Menu UI
@@ -36,11 +36,13 @@ pub fn handle_menu_input(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut next_state: ResMut<NextState<AppState>>,
     mut message: MessageWriter<PlaySoundEvent>,
+    mut game_data: ResMut<GameData>,
 ) {
     // Check for Enter Key, transition to playing
     if keyboard.just_pressed(KeyCode::Enter) {
         message.write(PlaySoundEvent::MenuBoop); // this will move when i have multiple ships to select
         message.write(PlaySoundEvent::GameStart); // this belongs here
+        game_data.score = 0;
         next_state.set(AppState::Playing);
     }
 }
