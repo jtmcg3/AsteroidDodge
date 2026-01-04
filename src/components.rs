@@ -31,6 +31,19 @@ impl Health {
     }
 }
 
+#[derive(Component)]
+pub enum DamageSource {
+    AsteroidEntity(AsteroidSize),
+}
+
+impl DamageSource {
+    pub fn damage(&self) -> f32 {
+        match *self {
+            DamageSource::AsteroidEntity(size) => size.damage(),
+        }
+    }
+}
+
 // Asteroid size categories
 #[derive(Component, Debug, Clone, Copy, PartialEq)]
 pub enum AsteroidSize {

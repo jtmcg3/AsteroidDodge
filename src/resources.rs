@@ -27,6 +27,13 @@ pub enum AppState {
 //     scores: Vec<(String, u32)>, // name, score
 // }
 
+#[derive(Resource)]
+pub struct ScreenShake {
+    pub timer: Timer,
+    pub intensity: u8,
+    pub active_state: u8,
+}
+
 #[derive(Resource, Default)]
 pub struct GameData {
     pub score: u32,

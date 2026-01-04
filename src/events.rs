@@ -1,3 +1,4 @@
+use crate::components::*;
 use crate::resources::*;
 use bevy::prelude::*;
 
@@ -44,4 +45,24 @@ pub fn handle_audio_events(
             )),
         };
     }
+}
+
+#[derive(Event, Message)]
+pub struct DamageEvent {
+    pub player: Entity,
+    pub position: Vec3,
+    pub source_type: DamageSource,
+}
+
+// #[derive(Event, Message)]
+// pub struct HealthChanged {
+//     pub player: Entity,
+//     pub new_health: f32,
+//     pub position: Vec3,
+// }
+
+#[derive(Event, Message)]
+pub struct DeathEvent {
+    pub player: Entity,
+    pub position: Vec3,
 }

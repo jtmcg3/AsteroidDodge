@@ -1,5 +1,5 @@
 use crate::components::*;
-use crate::events::PlaySoundEvent;
+use crate::events::{DamageEvent, PlaySoundEvent};
 use crate::resources::*;
 use crate::systems::asteroid::spawn_asteroid_entity;
 use avian2d::prelude::*;
@@ -10,12 +10,10 @@ use bevy_hanabi::prelude::*;
 ///
 /// Rust Concept: Breaking complex logic into helper functions
 pub fn handle_collisions_simple(
-    mut commands: Commands,
     mut collision_events: MessageReader<CollisionStart>,
-    mut player_query: Query<(Entity, &mut Health), With<Player>>,
+    player_query: Query<(Entity, &Transform), With<Player>>,
     asteroid_query: Query<(Entity, &AsteroidSize), With<Asteroid>>,
-    mut message: MessageWriter<PlaySoundEvent>,
-    mut next_state: ResMut<NextState<AppState>>,
+    mut message: MessageWriter<DamageEvent>,
 ) {
     for event in collision_events.read() {
         let entity1 = event.body1.unwrap();
@@ -25,7 +23,7 @@ pub fn handle_collisions_simple(
         if let Some(collision) =
             check_player_asteroid_collision(entity1, entity2, &player_query, &asteroid_query)
         {
-            handle_collision(collision, &mut commands, &mut player_query, &mut message , &mut next_state);
+            handle_collision(collision, &mut message );
         }
 
         // Check Projectile-Asteroid
@@ -171,7 +169,7 @@ pub fn handle_projectile_collisions(
 }
 
 /// Spawn an explosion particle effect at the given position
-fn spawn_explosion(
+pub fn spawn_explosion(
     commands: &mut Commands,
     effects: &mut ResMut<Assets<EffectAsset>>,
     position: Vec3,
@@ -238,7 +236,8 @@ fn spawn_explosion(
 /// Rust Concept: Custom types for clarity
 struct PlayerAsteroidCollision {
     player_entity: Entity,
-    damage: f32,
+    position: Vec3,
+    asteroid_size: AsteroidSize,
 }
 
 /// Check if two entities represent a player-asteroid collision
@@ -247,24 +246,26 @@ struct PlayerAsteroidCollision {
 fn check_player_asteroid_collision(
     entity1: Entity,
     entity2: Entity,
-    player_query: &Query<(Entity, &mut Health), With<Player>>,
+    player_query: &Query<(Entity, &Transform), With<Player>>,
     asteroid_query: &Query<(Entity, &AsteroidSize), With<Asteroid>>,
 ) -> Option<PlayerAsteroidCollision> {
     // Try entity1 as player, entity2 as asteroid
-    if player_query.get(entity1).is_ok()
+    if let Ok((_, transform)) = player_query.get(entity1)
         && let Ok((_, size)) = asteroid_query.get(entity2) {
             return Some(PlayerAsteroidCollision {
                 player_entity: entity1,
-                damage: size.damage(),
+                position: transform.translation,
+                asteroid_size: *size,
             });
         }
 
     // Try entity2 as player, entity1 as asteroid
-    if player_query.get(entity2).is_ok()
+    if let Ok((_, transform)) = player_query.get(entity2)
         && let Ok((_, size)) = asteroid_query.get(entity1) {
             return Some(PlayerAsteroidCollision {
                 player_entity: entity2,
-                damage: size.damage(),
+                position: transform.translation,
+                asteroid_size: *size,
             });
         }
 
@@ -277,27 +278,12 @@ fn check_player_asteroid_collision(
 /// This function only handles the collision response
 fn handle_collision(
     collision: PlayerAsteroidCollision,
-    commands: &mut Commands,
-    player_query: &mut Query<(Entity, &mut Health), With<Player>>,
-    message: &mut MessageWriter<PlaySoundEvent>,
-    next_state: &mut ResMut<NextState<AppState>>,
+    message: &mut MessageWriter<DamageEvent>,
 ) {
-    // Get player health (we know it exists because we just checked)
-    // Rust Concept: unwrap() when we're certain it won't panic
-    let (player_entity, mut health) = player_query.get_mut(collision.player_entity).unwrap();
-
-    // Apply damage
-    health.damage(collision.damage);
-
-    // Remove asteroid
-    //commands.entity(collision.asteroid_entity).despawn();
-
-    // Check for game over
-    if health.is_dead() {
-        commands.entity(player_entity).despawn();
-        message.write(PlaySoundEvent::GameOver);
-        next_state.set(AppState::GameOver);
-    } else {
-        message.write(PlaySoundEvent::Bonk);
+    message.write( DamageEvent {
+        player: collision.player_entity,
+        position: collision.position,
+        source_type: DamageSource::AsteroidEntity(collision.asteroid_size),
+        }
+        );
     }
-}

@@ -65,6 +65,9 @@ fn main() {
         .add_systems(OnEnter(AppState::Loading), setup_loading)
         .add_systems(Update, (check_loading).run_if(in_state(AppState::Loading)))
         .add_message::<PlaySoundEvent>()
+        .add_message::<DamageEvent>()
+        // .add_message::<HealthChanged>()
+        .add_message::<DeathEvent>()
         .add_systems(Update, (handle_audio_events,))
         .add_systems(OnEnter(AppState::Menu), (setup_menu,))
         .add_systems(
@@ -101,6 +104,10 @@ fn main() {
                 // Physics and collision (handled by Avian automatically)
                 handle_collisions_simple,
                 handle_projectile_collisions,
+                //event handlers
+                handle_health_message,
+                handle_death_message,
+                handle_audio_events,
                 // UI updates
                 update_health_display,
                 update_score_display,
