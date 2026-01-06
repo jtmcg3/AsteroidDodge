@@ -8,7 +8,7 @@ debug = []
 
 [dependencies]
 avian2d = "0.4.1"
-bevy = {version = "0.17.2", features = ["jpeg", "png", "webgl2", "bevy_winit"]}
+bevy = {version = "0.17.2", features = ["jpeg", "png", "webgl2", "bevy_winit", "trace_tracy"]}
 bevy_asset = "0.17.2"
 bevy_hanabi = "0.17.0"
 bevy_mesh = "0.17.2"

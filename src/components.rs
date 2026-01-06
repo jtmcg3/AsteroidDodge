@@ -7,6 +7,9 @@ pub struct Player;
 #[derive(Component)]
 pub struct Asteroid;
 
+#[derive(Component)]
+pub struct Camera;
+
 // Health Component
 #[derive(Component)]
 pub struct Health {

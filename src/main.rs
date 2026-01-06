@@ -132,9 +132,9 @@ fn main() {
 /// Setup the camera
 ///
 /// Rust Concept: Simple startup system
-fn setup_camera(mut commands: Commands) {
-    commands.spawn(Camera2d);
-}
+///fn setup_camera(mut commands: Commands) {
+///    commands.spawn(Camera2d);
+///}
 
 // Required for WASM builds
 #[cfg(target_arch = "wasm32")]

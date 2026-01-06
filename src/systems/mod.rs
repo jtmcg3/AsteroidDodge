@@ -3,6 +3,7 @@
 
 pub mod asteroid;
 pub mod background;
+pub mod camera;
 pub mod collision;
 pub mod game_over;
 pub mod health;
@@ -16,6 +17,7 @@ pub mod projectile;
 // This allows users to import everything with `use systems::*;`
 pub use asteroid::*;
 pub use background::*;
+pub use camera::*;
 pub use collision::*;
 pub use game_over::*;
 pub use health::*;
