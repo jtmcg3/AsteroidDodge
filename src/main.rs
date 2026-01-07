@@ -60,6 +60,8 @@ fn main() {
         .init_resource::<AsteroidSpawnConfig>()
         .init_resource::<PhysicsConfig>()
         .init_resource::<DifficultyConfig>()
+        .init_resource::<ScreenShake>()
+        .init_resource::<CameraTarget>()
         // Startup systems (run once at launch)
         // Rust Concept: System scheduling with tuples
         .add_systems(OnEnter(AppState::Loading), setup_loading)
@@ -99,6 +101,9 @@ fn main() {
                 // Spawning and cleanup
                 spawn_asteroids,
                 cleanup_offscreen,
+                trigger_screen_shake,
+                update_screen_shake,
+                apply_camera_position,
                 move_projectiles,
                 cleanup_projectiles,
                 // Physics and collision (handled by Avian automatically)

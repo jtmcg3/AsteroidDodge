@@ -39,14 +39,14 @@ impl Default for ScreenShake {
     fn default() -> Self {
         Self {
             trauma: 0.0,
-            max_offset: 10.0, //pixels
-            decay_rate: 2.0,  // half second decay
+            max_offset: 50.0, //pixels
+            decay_rate: 1.0,  // half second decay
             offset: Vec3::ZERO,
         }
     }
 }
 
-#[derive(Resource)]
+#[derive(Resource, Default)]
 pub struct CameraTarget {
     pub position: Vec3,
 }
