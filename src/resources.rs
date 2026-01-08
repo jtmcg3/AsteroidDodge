@@ -29,9 +29,26 @@ pub enum AppState {
 
 #[derive(Resource)]
 pub struct ScreenShake {
-    pub timer: Timer,
-    pub intensity: u8,
-    pub active_state: u8,
+    pub trauma: f32,
+    pub max_offset: f32,
+    pub decay_rate: f32,
+    pub offset: Vec3,
+}
+
+impl Default for ScreenShake {
+    fn default() -> Self {
+        Self {
+            trauma: 0.0,
+            max_offset: 50.0, //pixels
+            decay_rate: 1.0,  // half second decay
+            offset: Vec3::ZERO,
+        }
+    }
+}
+
+#[derive(Resource, Default)]
+pub struct CameraTarget {
+    pub position: Vec3,
 }
 
 #[derive(Resource, Default)]
